@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vambapunk Map System</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.16/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #0a0a0a, #001f3f);
+            color: #00fff2;
+            font-family: 'Orbitron', sans-serif;
+            text-shadow: 0 0 5px #00fff2;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+        }
+
+        .container {
+            padding: 20px;
+            margin: 0 auto;
+        }
+
+        .map-container {
+            width: 100%;
+            height: 400px;
+            border-radius: 12px;
+            border: 3px solid #00fff2;
+            box-shadow: 0 0 15px #00fff2;
+            position: relative;
+        }
+
+        .marker-popup {
+            color: #000;
+            font-weight: bold;
+            padding: 10px;
+            background: rgba(0, 255, 242, 0.95);
+            border-radius: 8px;
+            box-shadow: 0 0 10px #00fff2;
+            text-align: center;
+        }
+
+        .btn {
+            background: linear-gradient(90deg, #00fff2, #00cccb);
+            color: black;
+            padding: 12px 24px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease-in-out;
+            font-weight: bold;
+            text-transform: uppercase;
+            border: 2px solid black;
+            box-shadow: 0 0 15px #00fff2;
+            margin: 4px;
+        }
+
+        .btn:hover {
+            background: #00a3a1;
+            box-shadow: 0 0 20px #00fff2;
+            transform: scale(1.05);
+        }
+
+        .cursor-girl {
+            position: absolute;
+            pointer-events: none;
+            width: 50px;
+            height: 50px;
+            background-image: url('https://upload.wikimedia.org/wikipedia/commons/5/5b/Simple_blue_dots_%28svg%29.svg');
+            background-size: cover;
+            border-radius: 50%;
+            animation: followCursor 0.2s ease-out, scaleUp 1.5s infinite alternate, shadowEffect 2s infinite ease-in-out;
+        }
+
+        @keyframes followCursor {
+            0% {
+                transform: scale(1);
+            }
+
+            100% {
+                transform: scale(1.2);
+            }
+        }
+
+        @keyframes scaleUp {
+            0% {
+                transform: scale(1);
+                box-shadow: 0 0 20px rgba(0, 255, 242, 0.8);
+            }
+
+            50% {
+                transform: scale(1.5);
+                box-shadow: 0 0 40px rgba(0, 255, 242, 1);
+            }
+
+            100% {
+                transform: scale(1.2);
+                box-shadow: 0 0 20px rgba(0, 255, 242, 0.8);
+            }
+        }
+
+        @keyframes shadowEffect {
+            0% {
+                box-shadow: 0 0 20px rgba(0, 255, 242, 0.8);
+            }
+
+            100% {
+                box-shadow: 0 0 30px rgba(0, 255, 242, 1);
+            }
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background-color: #00fff2;
+            border-radius: 10px;
+            border: 3px solid #001f3f;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #333;
+            border-radius: 10px;
+        }
+
+        .scroll-container {
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+
+        @media (max-width: 768px) {
+            .map-container {
+                height: 300px;
+            }
+
+            .cursor-girl {
+                width: 40px;
+                height: 40px;
+            }
+
+            .btn {
+                padding: 10px 20px;
+                font-size: 14px;
+            }
+
+            .scroll-container {
+                max-height: 50vh;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 5px;
+            }
+
+            .btn {
+                padding: 6px 12px;
+                font-size: 12px;
+            }
+
+            .map-container {
+                height: 250px;
+            }
+
+            .cursor-girl {
+                width: 30px;
+                height: 30px;
+            }
+
+            .scroll-container {
+                max-height: 45vh;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container mx-auto p-6 text-center">
+        <h1 class="text-4xl font-bold mb-6 animate-pulse">Cyberpunk Map System</h1>
+
+        <div class="flex justify-center gap-4 mb-6">
+            <input type="text" id="userName" class="btn" placeholder="Введите имя" />
+            <button class="btn" onclick="saveName()">Сохранить имя</button>
+        </div>
+
+        <div class="map-container mx-auto mt-6" id="mapContainer">
+            <div id="map" class="map-container"></div>
+        </div>
+
+        <div class="mt-6 flex justify-center gap-4">
+            <button class="btn" onclick="clearMarkers()">Очистить метки</button>
+            <button class="btn" onclick="locateUser()">Моё местоположение</button>
+            <button class="btn" onclick="plotRoute()">Построить маршрут</button>
+        </div>
+
+        <div class="mt-6 scroll-container">
+            <h2 class="text-2xl font-bold">Меню заданий</h2>
+            <div id="tasks"></div>
+            <button class="btn mt-4" onclick="addTask()">Добавить задание</button>
+        </div>
+
+        <div class="mt-6 scroll-container">
+            <h2 class="text-2xl font-bold">Инвентарь</h2>
+            <div id="inventory"></div>
+            <button class="btn mt-4" onclick="addItem()">Добавить предмет</button>
+        </div>
+
+        <div class="cursor-girl" id="cursorGirl"></div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script>
+        const map = L.map('map').setView([51.505, -0.09], 13);
+        const tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+
+        const tasks = JSON.parse(localStorage.getItem("tasks")) || [];
+        const inventory = JSON.parse(localStorage.getItem("inventory")) || [];
+        let markers = JSON.parse(localStorage.getItem("markers")) || [];
+        let userPosition;
+        let route;
+
+        // Сохранение имени пользователя
+        function saveName() {
+            const userName = document.getElementById('userName').value;
+            if (userName) {
+                localStorage.setItem("userName", userName);
+                alert("Имя сохранено!");
+            } else {
+                alert("Введите имя");
+            }
+        }
+
+        // Добавление задания
+        function addTask() {
+            const taskDescription = prompt("Введите описание задания:");
+            if (taskDescription) {
+                tasks.push(taskDescription);
+                localStorage.setItem("tasks", JSON.stringify(tasks));
+                renderTasks();
+            }
+        }
+
+        // Удаление задания
+        function removeTask(index) {
+            tasks.splice(index, 1);
+            localStorage.setItem("tasks", JSON.stringify(tasks));
+            renderTasks();
+        }
+
+        // Добавление предмета в инвентарь
+        function addItem() {
+            const itemName = prompt("Введите название предмета:");
+            if (itemName) {
+                inventory.push(itemName);
+                localStorage.setItem("inventory", JSON.stringify(inventory));
+                renderInventory();
+            }
+        }
+
+        // Удаление предмета
+        function removeItem(index) {
+            inventory.splice(index, 1);
+            localStorage.setItem("inventory", JSON.stringify(inventory));
+            renderInventory();
+        }
+
+        // Рендеринг задач
+        function renderTasks() {
+            const tasksDiv = document.getElementById('tasks');
+            tasksDiv.innerHTML = tasks.map((task, index) => 
+                `<div class="flex justify-between items-center mb-2">
+                    <span>${task}</span>
+                    <button class="btn" onclick="removeTask(${index})">Удалить</button>
+                </div>`).join('');
+        }
+
+        // Рендеринг инвентаря
+        function renderInventory() {
+            const inventoryDiv = document.getElementById('inventory');
+            inventoryDiv.innerHTML = inventory.map((item, index) => 
+                `<div class="flex justify-between items-center mb-2">
+                    <span>${item}</span>
+                    <button class="btn" onclick="removeItem(${index})">Удалить</button>
+                </div>`).join('');
+        }
+
+        // Добавление маркера
+        function addMarker(e) {
+            const description = prompt("Введите описание для этого маркера:");
+            if (description) {
+                const marker = L.marker(e.latlng).addTo(map).bindPopup(`
+                    <div class="marker-popup">
+                        ${description}<br>
+                        <button onclick="removeMarker(${markers.length})" class="btn" style="background:red;">Удалить</button>
+                    </div>
+                `).openPopup();
+                markers.push({
+                    latLng: e.latlng,
+                    description: description
+                });
+                localStorage.setItem("markers", JSON.stringify(markers));
+            }
+        }
+
+        // Удаление маркера
+        function removeMarker(index) {
+            const marker = markers[index];
+            map.eachLayer(layer => {
+                if (layer._latlng && layer._latlng.lat === marker.latLng.lat && layer._latlng.lng === marker.latLng.lng) {
+                    map.removeLayer(layer);
+                }
+            });
+            markers.splice(index, 1);
+            localStorage.setItem("markers", JSON.stringify(markers));
+        }
+
+        // Определение местоположения пользователя
+        function locateUser() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(position => {
+                    userPosition = L.latLng(position.coords.latitude, position.coords.longitude);
+                    map.setView(userPosition, 15);
+                    const userMarker = L.marker(userPosition, {icon: L.icon({ iconUrl: 'https://upload.wikimedia.org/wikipedia/commons/5/5b/Simple_blue_dots_%28svg%29.svg' })}).addTo(map);
+                    userMarker.bindPopup("Ваше местоположение").openPopup();
+                }, () => {
+                    alert("Не удалось найти местоположение");
+                });
+            } else {
+                alert("Геолокация не поддерживается этим браузером");
+            }
+        }
+
+        // Построение маршрута
+        function plotRoute() {
+            const latLngs = markers.map(markerData => markerData.latLng);
+            if (latLngs.length > 1) {
+                route = L.polyline(latLngs, { color: 'red', weight: 4 }).addTo(map);
+                map.fitBounds(route.getBounds());
+            } else {
+                alert("Для построения маршрута нужно больше чем одну точку");
+            }
+        }
+
+        // Очистка всех маркеров
+        function clearMarkers() {
+            markers.forEach((markerData, index) => {
+                map.eachLayer(layer => {
+                    if (layer._latlng && layer._latlng.lat === markerData.latLng.lat && layer._latlng.lng === markerData.latLng.lng) {
+                        map.removeLayer(layer);
+                    }
+                });
+            });
+            markers = [];
+            localStorage.setItem("markers", JSON.stringify(markers));
+        }
+
+        // Инициализация маркеров
+        function renderMarkers() {
+            markers.forEach(markerData => {
+                L.marker(markerData.latLng).addTo(map).bindPopup(`
+                    <div class="marker-popup">
+                        ${markerData.description}<br>
+                        <button onclick="removeMarker(${markers.indexOf(markerData)})" class="btn" style="background:red;">Удалить</button>
+                    </div>
+                `);
+            });
+        }
+
+        // Инициализация карты и меток
+        renderTasks();
+        renderInventory();
+        renderMarkers();
+        map.on('click', addMarker);
+    </script>
+</body>
+
+</html>
