@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CyberVambaPip 2077</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: 'Courier New', monospace;
+        }
+
+        body {
+            margin: 0;
+            background: #001a1a;
+            color: #0ff;
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 20px;
+            border: 3px solid #0ff;
+            box-shadow: 0 0 20px #0ff8;
+            border-radius: 10px;
+            background: #002626;
+            position: relative;
+            min-height: 90vh;
+        }
+
+        .scanline {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to bottom,
+                transparent 50%,
+                #0ff1 51%,
+                transparent 52%);
+            pointer-events: none;
+            animation: scan 4s linear infinite;
+        }
+
+        h1 {
+            color: #0ff;
+            text-shadow: 0 0 10px #0ff;
+            text-align: center;
+            font-size: 2.5em;
+            margin: 0 0 20px;
+        }
+
+        .data-panel {
+            border: 2px solid #0ff;
+            padding: 15px;
+            margin: 10px 0;
+            background: #000d0d;
+        }
+
+        input, button, textarea {
+            background: #001a1a;
+            border: 1px solid #0ff;
+            color: #0ff;
+            padding: 8px;
+            margin: 5px 0;
+            width: 100%;
+            font-size: 1.1em;
+        }
+
+        button {
+            background: #004d4d;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        button:hover {
+            background: #008080;
+            box-shadow: 0 0 15px #0ff;
+        }
+
+        #map-link {
+            display: block;
+            text-align: center;
+            padding: 15px;
+            border: 2px solid #0ff;
+            margin: 20px 0;
+            color: #0ff;
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+
+        #map-link:hover {
+            background: #0ff2;
+        }
+
+        .glow {
+            animation: glow 1.5s ease-in-out infinite alternate;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .tab {
+            flex: 1;
+            padding: 10px;
+            text-align: center;
+            border: 2px solid #0ff;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .tab.active {
+            background: #0ff3;
+        }
+        
+        .content-section {
+            display: none;
+        }
+        
+        .content-section.active {
+            display: block;
+        }
+        
+        .item-card {
+            border: 1px solid #0ff;
+            padding: 10px;
+            margin: 10px 0;
+            position: relative;
+            background: #001111;
+        }
+        
+        .item-image {
+            max-width: 100%;
+            height: 150px;
+            object-fit: cover;
+            border: 1px solid #0ff;
+        }
+        
+        .delete-btn {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: #ff0044;
+            border: none;
+            color: white;
+            cursor: pointer;
+            padding: 2px 5px;
+        }
+        
+        .grid-container {
+            display: grid;
+            gap: 15px;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        }
+
+        @keyframes scan {
+            0% { transform: translateY(-100%); }
+            100% { transform: translateY(100%); }
+        }
+
+        @keyframes glow {
+            from { text-shadow: 0 0 5px #0ff; }
+            to { text-shadow: 0 0 20px #0ff, 0 0 10px #0ff; }
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                margin: 10px;
+                padding: 10px;
+            }
+
+            h1 {
+                font-size: 1.8em;
+            }
+
+            input, button, textarea {
+                font-size: 1em;
+            }
+            
+            .grid-container {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="scanline"></div>
+        <h1 class="glow">CyberVambaPip 2077</h1>
+        
+        <div class="tabs">
+            <div class="tab active" onclick="switchTab('inventory')">ИНВЕНТАРЬ</div>
+            <div class="tab" onclick="switchTab('quests')">ЗАДАНИЯ</div>
+        </div>
+
+        <!-- Inventory Section -->
+        <div id="inventory" class="content-section active">
+            <div class="data-panel">
+                <h2>ДОБАВИТЬ ПРЕДМЕТ:</h2>
+                <input type="text" id="itemName" placeholder="Название предмета">
+                <textarea id="itemDesc" placeholder="Описание" rows="3"></textarea>
+                <input type="file" id="itemImage" accept="image/*">
+                <button onclick="addItem()">ДОБАВИТЬ</button>
+            </div>
+            
+            <div class="data-panel">
+                <h2>СОДЕРЖИМОЕ:</h2>
+                <div class="grid-container" id="inventoryItems"></div>
+            </div>
+        </div>
+
+        <!-- Quests Section -->
+        <div id="quests" class="content-section">
+            <div class="data-panel">
+                <h2>НОВОЕ ЗАДАНИЕ:</h2>
+                <input type="text" id="questTitle" placeholder="Название задания">
+                <textarea id="questDesc" placeholder="Описание" rows="3"></textarea>
+                <button onclick="addQuest()">ДОБАВИТЬ</button>
+            </div>
+            
+            <div class="data-panel">
+                <h2>АКТИВНЫЕ ЗАДАНИЯ:</h2>
+                <div id="questsList"></div>
+            </div>
+        </div>
+
+        <a href="map.html" id="map-link">>> ПЕРЕЙТИ К КАРТЕ <<</a>
+    </div>
+
+    <script>
+        // Tab switching
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab, .content-section').forEach(el => {
+                el.classList.remove('active');
+            });
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        // Inventory System
+        let inventory = JSON.parse(localStorage.getItem('inventory')) || [];
+        let quests = JSON.parse(localStorage.getItem('quests')) || [];
+
+        function addItem() {
+            const name = document.getElementById('itemName').value;
+            const desc = document.getElementById('itemDesc').value;
+            const file = document.getElementById('itemImage').files[0];
+            
+            if(!name || !desc) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const newItem = {
+                    id: Date.now(),
+                    name,
+                    desc,
+                    image: e.target.result
+                };
+                
+                inventory.push(newItem);
+                localStorage.setItem('inventory', JSON.stringify(inventory));
+                renderInventory();
+                clearItemForm();
+            };
+            
+            file ? reader.readAsDataURL(file) : addItemWithoutImage();
+        }
+
+        function addItemWithoutImage() {
+            const newItem = {
+                id: Date.now(),
+                name: document.getElementById('itemName').value,
+                desc: document.getElementById('itemDesc').value,
+                image: null
+            };
+            
+            inventory.push(newItem);
+            localStorage.setItem('inventory', JSON.stringify(inventory));
+            renderInventory();
+            clearItemForm();
+        }
+
+        function deleteItem(id) {
+            inventory = inventory.filter(item => item.id !== id);
+            localStorage.setItem('inventory', JSON.stringify(inventory));
+            renderInventory();
+        }
+
+        function renderInventory() {
+            const container = document.getElementById('inventoryItems');
+            container.innerHTML = inventory.map(item => `
+                <div class="item-card">
+                    <button class="delete-btn" onclick="deleteItem(${item.id})">X</button>
+                    ${item.image ? `<img src="${item.image}" class="item-image">` : ''}
+                    <h3>${item.name}</h3>
+                    <p>${item.desc}</p>
+                </div>
+            `).join('');
+        }
+
+        // Quest System
+        function addQuest() {
+            const title = document.getElementById('questTitle').value;
+            const desc = document.getElementById('questDesc').value;
+            
+            if(!title || !desc) return;
+            
+            const newQuest = {
+                id: Date.now(),
+                title,
+                desc
+            };
+            
+            quests.push(newQuest);
+            localStorage.setItem('quests', JSON.stringify(quests));
+            renderQuests();
+            clearQuestForm();
+        }
+
+        function deleteQuest(id) {
+            quests = quests.filter(quest => quest.id !== id);
+            localStorage.setItem('quests', JSON.stringify(quests));
+            renderQuests();
+        }
+
+        function renderQuests() {
+            const container = document.getElementById('questsList');
+            container.innerHTML = quests.map(quest => `
+                <div class="item-card">
+                    <button class="delete-btn" onclick="deleteQuest(${quest.id})">X</button>
+                    <h3>${quest.title}</h3>
+                    <p>${quest.desc}</p>
+                </div>
+            `).join('');
+        }
+
+        // Helpers
+        function clearItemForm() {
+            document.getElementById('itemName').value = '';
+            document.getElementById('itemDesc').value = '';
+            document.getElementById('itemImage').value = '';
+        }
+
+        function clearQuestForm() {
+            document.getElementById('questTitle').value = '';
+            document.getElementById('questDesc').value = '';
+        }
+
+        // Initial render
+        window.onload = () => {
+            renderInventory();
+            renderQuests();
+        }
+    </script>
+</body>
+</html>
