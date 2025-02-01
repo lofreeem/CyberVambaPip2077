@@ -1,359 +1,349 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CyberVambaPip 2077</title>
+    <title>5D Матрица с 7D Кубом</title>
     <style>
         * {
+            margin: 0;
+            padding: 0;
             box-sizing: border-box;
-            font-family: 'Courier New', monospace;
         }
 
         body {
-            margin: 0;
-            background: #001a1a;
-            color: #0ff;
-            line-height: 1.6;
-            overflow-x: hidden;
-        }
-
-        .container {
-            max-width: 600px;
-            margin: 20px auto;
-            padding: 20px;
-            border: 3px solid #0ff;
-            box-shadow: 0 0 20px #0ff8;
-            border-radius: 10px;
-            background: #002626;
+            height: 100vh;
+            background: linear-gradient(45deg, #6a0dad, #000428);
+            font-family: 'Orbitron', sans-serif;
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
             position: relative;
-            min-height: 90vh;
+            overflow: hidden;
+            transition: background 1s ease;
+            animation: backgroundColorChange 20s infinite alternate;
         }
 
-        .scanline {
+        @keyframes backgroundColorChange {
+            0% {
+                background: linear-gradient(45deg, #6a0dad, #000428);
+            }
+            50% {
+                background: linear-gradient(45deg, #000428, #6a0dad);
+            }
+            100% {
+                background: linear-gradient(45deg, #6a0dad, #000428);
+            }
+        }
+
+        /* 3D пространство комнаты */
+        .room {
             position: absolute;
+            top: 0;
+            left: 0;
             width: 100%;
             height: 100%;
-            background: linear-gradient(to bottom,
-                transparent 50%,
-                #0ff1 51%,
-                transparent 52%);
-            pointer-events: none;
-            animation: scan 4s linear infinite;
-        }
-
-        h1 {
-            color: #0ff;
-            text-shadow: 0 0 10px #0ff;
-            text-align: center;
-            font-size: 2.5em;
-            margin: 0 0 20px;
-        }
-
-        .data-panel {
-            border: 2px solid #0ff;
-            padding: 15px;
-            margin: 10px 0;
-            background: #000d0d;
-        }
-
-        input, button, textarea {
-            background: #001a1a;
-            border: 1px solid #0ff;
-            color: #0ff;
-            padding: 8px;
-            margin: 5px 0;
-            width: 100%;
-            font-size: 1.1em;
-        }
-
-        button {
-            background: #004d4d;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        button:hover {
-            background: #008080;
-            box-shadow: 0 0 15px #0ff;
-        }
-
-        #map-link {
-            display: block;
-            text-align: center;
-            padding: 15px;
-            border: 2px solid #0ff;
-            margin: 20px 0;
-            color: #0ff;
-            text-decoration: none;
-            transition: all 0.3s;
-        }
-
-        #map-link:hover {
-            background: #0ff2;
-        }
-
-        .glow {
-            animation: glow 1.5s ease-in-out infinite alternate;
-        }
-
-        .tabs {
             display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
+            justify-content: center;
+            align-items: center;
+            perspective: 1500px;
         }
-        
-        .tab {
-            flex: 1;
-            padding: 10px;
-            text-align: center;
-            border: 2px solid #0ff;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-        
-        .tab.active {
-            background: #0ff3;
-        }
-        
-        .content-section {
-            display: none;
-        }
-        
-        .content-section.active {
-            display: block;
-        }
-        
-        .item-card {
-            border: 1px solid #0ff;
-            padding: 10px;
-            margin: 10px 0;
+
+        /* Визуальные элементы внутри комнаты */
+        .scene {
             position: relative;
-            background: #001111;
+            width: 100vw;
+            height: 100vh;
+            transform-style: preserve-3d;
+            animation: rotateScene 5s infinite linear;
         }
-        
-        .item-image {
-            max-width: 100%;
-            height: 150px;
-            object-fit: cover;
-            border: 1px solid #0ff;
-        }
-        
-        .delete-btn {
+
+        .cube-container {
             position: absolute;
-            top: 5px;
-            right: 5px;
-            background: #ff0044;
-            border: none;
-            color: white;
-            cursor: pointer;
-            padding: 2px 5px;
-        }
-        
-        .grid-container {
-            display: grid;
-            gap: 15px;
-            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 400px;
+            height: 400px;
+            transform-style: preserve-3d;
+            animation: rotateCube 5s infinite linear;
         }
 
-        @keyframes scan {
-            0% { transform: translateY(-100%); }
-            100% { transform: translateY(100%); }
+        .cube {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+            transform: rotateX(-30deg);
         }
 
-        @keyframes glow {
-            from { text-shadow: 0 0 5px #0ff; }
-            to { text-shadow: 0 0 20px #0ff, 0 0 10px #0ff; }
+        .cube div {
+            position: absolute;
+            width: 400px;
+            height: 400px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border: 1px solid #8e44ad;
         }
 
-        @media (max-width: 600px) {
-            .container {
-                margin: 10px;
+        .cube .front  { transform: rotateY(  0deg) translateZ(200px); }
+        .cube .back   { transform: rotateY(180deg) translateZ(200px); }
+        .cube .left   { transform: rotateY(-90deg) translateZ(200px); }
+        .cube .right  { transform: rotateY( 90deg) translateZ(200px); }
+        .cube .top    { transform: rotateX( 90deg) translateZ(200px); }
+        .cube .bottom { transform: rotateX(-90deg) translateZ(200px); }
+
+        @keyframes rotateCube {
+            0% { transform: rotateX(0deg) rotateY(0deg); }
+            100% { transform: rotateX(360deg) rotateY(360deg); }
+        }
+
+        /* Плавное появление текста */
+        @keyframes fadeIn {
+            0% {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .content {
+            text-align: center;
+            font-size: 2rem;
+            z-index: 10;
+            position: relative;
+            animation: fadeIn 3s ease-in-out forwards;
+        }
+
+        .content h1 {
+            font-size: 6rem;
+            text-transform: uppercase;
+            letter-spacing: 5px;
+            text-shadow: 0 0 20px rgba(255, 255, 255, 0.4), 0 0 30px rgba(255, 255, 255, 0.3), 0 0 40px rgba(255, 255, 255, 0.2);
+            animation: fadeIn 3s ease-in-out forwards;
+        }
+
+        .content p {
+            font-size: 1.5rem;
+            color: #ddd;
+            margin-top: 20px;
+        }
+
+        /* Меню сверху */
+        .menu {
+            position: absolute;
+            top: 120px; /* Опустим меню вниз */
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            justify-content: space-around;
+            width: 80%;
+            padding: 20px 0;
+            z-index: 100;
+            opacity: 0;
+            animation: showMenu 2s forwards;
+            background-color: rgba(0, 0, 0, 0.6);
+            border-radius: 10px;
+        }
+
+        @keyframes showMenu {
+            0% { opacity: 0; }
+            100% { opacity: 1; }
+        }
+
+        .menu a {
+            color: #fff;
+            font-size: 1.5rem;
+            padding: 15px 30px;
+            text-decoration: none;
+            text-align: center;
+            border-radius: 10px;
+            transition: transform 0.3s ease, background-color 0.3s ease;
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.6);
+        }
+
+        .menu a:hover {
+            background-color: #8e44ad;
+            transform: scale(1.1);
+        }
+
+        /* Анимации для фоновых элементов */
+        @keyframes backgroundRotation {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .background-animation {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, #6a0dad, #000428);
+            animation: backgroundRotation 60s infinite linear;
+            z-index: -1;
+        }
+
+        /* Вращающиеся планеты */
+        .planet {
+            position: absolute;
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.2);
+            animation: rotatePlanet 10s infinite linear;
+        }
+
+        .planet1 {
+            top: 20%;
+            left: 10%;
+            animation-duration: 12s;
+            background-color: rgba(255, 0, 0, 0.5);
+        }
+
+        .planet2 {
+            top: 40%;
+            left: 80%;
+            animation-duration: 15s;
+            background-color: rgba(0, 255, 0, 0.5);
+        }
+
+        .planet3 {
+            top: 60%;
+            left: 30%;
+            animation-duration: 18s;
+            background-color: rgba(0, 0, 255, 0.5);
+        }
+
+        @keyframes rotatePlanet {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Отзывчивость для мобильных устройств */
+        @media (max-width: 768px) {
+            .content h1 {
+                font-size: 4rem; /* Уменьшаем размер заголовка */
+            }
+
+            .content p {
+                font-size: 1.2rem; /* Уменьшаем размер текста */
+            }
+
+            .menu {
+                flex-direction: column;
+                width: 90%;
+                padding: 10px 0;
+            }
+
+            .menu a {
+                font-size: 1.2rem;
                 padding: 10px;
             }
+        }
 
-            h1 {
-                font-size: 1.8em;
+        @media (max-width: 480px) {
+            .content h1 {
+                font-size: 3rem; /* Еще больше уменьшаем размер заголовка */
             }
 
-            input, button, textarea {
-                font-size: 1em;
+            .content p {
+                font-size: 1rem; /* Еще больше уменьшаем размер текста */
             }
-            
-            .grid-container {
-                grid-template-columns: 1fr;
+
+            .menu a {
+                font-size: 1rem;
+                padding: 8px;
             }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="scanline"></div>
-        <h1 class="glow">CyberVambaPip 2077</h1>
-        
-        <div class="tabs">
-            <div class="tab active" onclick="switchTab('inventory')">ИНВЕНТАРЬ</div>
-            <div class="tab" onclick="switchTab('quests')">ЗАДАНИЯ</div>
-        </div>
 
-        <!-- Inventory Section -->
-        <div id="inventory" class="content-section active">
-            <div class="data-panel">
-                <h2>ДОБАВИТЬ ПРЕДМЕТ:</h2>
-                <input type="text" id="itemName" placeholder="Название предмета">
-                <textarea id="itemDesc" placeholder="Описание" rows="3"></textarea>
-                <input type="file" id="itemImage" accept="image/*">
-                <button onclick="addItem()">ДОБАВИТЬ</button>
-            </div>
-            
-            <div class="data-panel">
-                <h2>СОДЕРЖИМОЕ:</h2>
-                <div class="grid-container" id="inventoryItems"></div>
+<div class="background-animation"></div>
+
+<div class="room">
+    <div class="scene">
+        <div class="cube-container">
+            <div class="cube">
+                <div class="front"></div>
+                <div class="back"></div>
+                <div class="left"></div>
+                <div class="right"></div>
+                <div class="top"></div>
+                <div class="bottom"></div>
             </div>
         </div>
-
-        <!-- Quests Section -->
-        <div id="quests" class="content-section">
-            <div class="data-panel">
-                <h2>НОВОЕ ЗАДАНИЕ:</h2>
-                <input type="text" id="questTitle" placeholder="Название задания">
-                <textarea id="questDesc" placeholder="Описание" rows="3"></textarea>
-                <button onclick="addQuest()">ДОБАВИТЬ</button>
-            </div>
-            
-            <div class="data-panel">
-                <h2>АКТИВНЫЕ ЗАДАНИЯ:</h2>
-                <div id="questsList"></div>
-            </div>
-        </div>
-
-        <a href="map.html" id="map-link">>> ПЕРЕЙТИ К КАРТЕ <<</a>
     </div>
+</div>
 
-    <script>
-        // Tab switching
-        function switchTab(tabName) {
-            document.querySelectorAll('.tab, .content-section').forEach(el => {
-                el.classList.remove('active');
-            });
-            document.getElementById(tabName).classList.add('active');
-            event.target.classList.add('active');
+<div class="content">
+    <h1>Добро пожаловать в Вамба Matrix 13</h1>
+    <p>Погрузись в мир матрицы с неограниченными возможностями</p>
+</div>
+
+<!-- Меню сверху -->
+<div class="menu">
+    <a href="CyberVambaPip2077.html">Перейти на CyberVambaPip2077</a>
+    <a href="#">Вкладка 2</a>
+    <a href="#">Вкладка 3</a>
+    <a href="#">Вкладка 4</a>
+    <a href="#">Вкладка 5</a>
+    <a href="#">Вкладка 6</a>
+    <a href="#">Вкладка 7</a>
+</div>
+
+<!-- Вращающиеся планеты -->
+<div class="planet planet1"></div>
+<div class="planet planet2"></div>
+<div class="planet planet3"></div>
+
+<script>
+    const canvas = document.getElementById('matrix');
+    const ctx = canvas.getContext('2d');
+
+    // Устанавливаем размеры canvas
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const chars = '01'; // Символы, которые будут использоваться для "кода"
+    const fontSize = 16;
+    const columns = canvas.width / fontSize; // Количество столбцов
+    const drops = [];
+
+    // Заполняем массив drops
+    for (let i = 0; i < columns; i++) {
+        drops.push(0);
+    }
+
+    // Анимация
+    function drawMatrix() {
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.05)'; // Полупрозрачный черный фон для эффекта размытия
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.fillStyle = '#8e44ad'; // Фиолетовый цвет для текста
+        ctx.font = `${fontSize}px monospace`;
+
+        // Для каждого столбца
+        for (let i = 0; i < drops.length; i++) {
+            const text = chars[Math.floor(Math.random() * chars.length)];
+            ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+
+            // Перезапуск капель
+            if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+                drops[i] = 0;
+            }
+
+            drops[i]++;
         }
+    }
 
-        // Inventory System
-        let inventory = JSON.parse(localStorage.getItem('inventory')) || [];
-        let quests = JSON.parse(localStorage.getItem('quests')) || [];
+    // Повторная отрисовка анимации
+    setInterval(drawMatrix, 35);
+</script>
 
-        function addItem() {
-            const name = document.getElementById('itemName').value;
-            const desc = document.getElementById('itemDesc').value;
-            const file = document.getElementById('itemImage').files[0];
-            
-            if(!name || !desc) return;
-            
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const newItem = {
-                    id: Date.now(),
-                    name,
-                    desc,
-                    image: e.target.result
-                };
-                
-                inventory.push(newItem);
-                localStorage.setItem('inventory', JSON.stringify(inventory));
-                renderInventory();
-                clearItemForm();
-            };
-            
-            file ? reader.readAsDataURL(file) : addItemWithoutImage();
-        }
-
-        function addItemWithoutImage() {
-            const newItem = {
-                id: Date.now(),
-                name: document.getElementById('itemName').value,
-                desc: document.getElementById('itemDesc').value,
-                image: null
-            };
-            
-            inventory.push(newItem);
-            localStorage.setItem('inventory', JSON.stringify(inventory));
-            renderInventory();
-            clearItemForm();
-        }
-
-        function deleteItem(id) {
-            inventory = inventory.filter(item => item.id !== id);
-            localStorage.setItem('inventory', JSON.stringify(inventory));
-            renderInventory();
-        }
-
-        function renderInventory() {
-            const container = document.getElementById('inventoryItems');
-            container.innerHTML = inventory.map(item => `
-                <div class="item-card">
-                    <button class="delete-btn" onclick="deleteItem(${item.id})">X</button>
-                    ${item.image ? `<img src="${item.image}" class="item-image">` : ''}
-                    <h3>${item.name}</h3>
-                    <p>${item.desc}</p>
-                </div>
-            `).join('');
-        }
-
-        // Quest System
-        function addQuest() {
-            const title = document.getElementById('questTitle').value;
-            const desc = document.getElementById('questDesc').value;
-            
-            if(!title || !desc) return;
-            
-            const newQuest = {
-                id: Date.now(),
-                title,
-                desc
-            };
-            
-            quests.push(newQuest);
-            localStorage.setItem('quests', JSON.stringify(quests));
-            renderQuests();
-            clearQuestForm();
-        }
-
-        function deleteQuest(id) {
-            quests = quests.filter(quest => quest.id !== id);
-            localStorage.setItem('quests', JSON.stringify(quests));
-            renderQuests();
-        }
-
-        function renderQuests() {
-            const container = document.getElementById('questsList');
-            container.innerHTML = quests.map(quest => `
-                <div class="item-card">
-                    <button class="delete-btn" onclick="deleteQuest(${quest.id})">X</button>
-                    <h3>${quest.title}</h3>
-                    <p>${quest.desc}</p>
-                </div>
-            `).join('');
-        }
-
-        // Helpers
-        function clearItemForm() {
-            document.getElementById('itemName').value = '';
-            document.getElementById('itemDesc').value = '';
-            document.getElementById('itemImage').value = '';
-        }
-
-        function clearQuestForm() {
-            document.getElementById('questTitle').value = '';
-            document.getElementById('questDesc').value = '';
-        }
-
-        // Initial render
-        window.onload = () => {
-            renderInventory();
-            renderQuests();
-        }
-    </script>
 </body>
 </html>
