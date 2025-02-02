@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Динамичная Вселенная</title>
+    <style>
+        /* Убираем прокрутку на странице */
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+        }
+
+        /* Настроим контейнер для фона */
+        #backgroundScene {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1; /* Это сделает сцену фоном */
+        }
+
+        /* Контейнер для контента */
+        .content {
+            position: relative;
+            z-index: 1;
+            color: white;
+            text-align: center;
+            padding-top: 50px;
+        }
+
+        /* Стиль для навигационного меню */
+        nav {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 2;
+        }
+
+        nav ul {
+            list-style-type: none;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            gap: 15px;
+        }
+
+        nav ul li {
+            display: inline;
+        }
+
+        nav ul li a {
+            text-decoration: none;
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+            padding: 10px;
+            background-color: rgba(0, 0, 0, 0.5);
+            border-radius: 5px;
+            transition: background-color 0.3s ease;
+        }
+
+        nav ul li a:hover {
+            background-color: rgba(0, 0, 0, 0.7);
+        }
+
+        /* Контейнер для разделов */
+        .section {
+            display: none;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        .section h2 {
+            margin-bottom: 20px;
+        }
+
+        .section p {
+            font-size: 16px;
+        }
+
+    </style>
+</head>
+<body>
+    <!-- Контейнер для фона -->
+    <div id="backgroundScene"></div>
+
+    <!-- Навигационное меню -->
+    <nav>
+        <ul>
+            <li><a href="#" onclick="showSection('home')">Главная</a></li>
+            <li><a href="#" onclick="showSection('about')">О проекте</a></li>
+            <li><a href="#" onclick="showSection('contact')">Контакты</a></li>
+        </ul>
+    </nav>
+
+    <!-- Остальная часть сайта -->
+    <div class="content">
+        <h1>Привет, это пример с динамичным фоном!</h1>
+        <p>Интерактивная вселенная, которая оживает на фоне.</p>
+    </div>
+
+    <!-- Разделы контента -->
+    <div id="home" class="section active">
+        <h2>Добро пожаловать в динамичную вселенную Вамбы!</h2>
+        <p>Здесь вы можете взаимодействовать с виртуальным миром, который меняется в зависимости от ваших действий.</p>
+    </div>
+
+    <div id="about" class="section">
+        <h2>О проекте</h2>
+        <p>Это пример интерактивного фона, созданного с использованием технологии Three.js. Мы создали динамичную вселенную, которая реагирует на действия пользователя.</p>
+    </div>
+
+    <div id="contact" class="section">
+        <h2>Контакты</h2>
+        <p>Для связи с нами, пишите на <a href="xxxtrapxxx81@gmail.com">xxxtrapxxx81@gmail.com</a>.</p>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        // Код с Three.js для динамичного фона
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.getElementById("backgroundScene").appendChild(renderer.domElement);
+
+        // Используем HDR освещение для улучшенной освещенности
+        const hdrTexture = new THREE.CubeTextureLoader().load([
+            'path_to_posx.jpg', 'path_to_negx.jpg',
+            'path_to_posy.jpg', 'path_to_negy.jpg',
+            'path_to_posz.jpg', 'path_to_negz.jpg'
+        ]);
+        scene.background = hdrTexture;
+        scene.environment = hdrTexture;
+
+        // Атмосферное освещение с эффектами
+        const ambientLight = new THREE.AmbientLight(0x404040, 1.0);  // Мягкое амбиентное освещение
+        scene.add(ambientLight);
+
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5);
+        directionalLight.position.set(1, 1, 1).normalize();
+        scene.add(directionalLight);
+
+        // Добавим красивое звездное небо с лучами
+        const starsGeometry = new THREE.BufferGeometry();
+        const starsMaterial = new THREE.PointsMaterial({ color: 0x888888, size: 0.2, blending: THREE.AdditiveBlending });
+        const starsCount = 5000;
+        const starPositions = [];
+        for (let i = 0; i < starsCount; i++) {
+            const x = Math.random() * 2000 - 1000;
+            const y = Math.random() * 2000 - 1000;
+            const z = Math.random() * 2000 - 1000;
+            starPositions.push(x, y, z);
+        }
+        starsGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starPositions, 3));
+        const stars = new THREE.Points(starsGeometry, starsMaterial);
+        scene.add(stars);
+
+        // Используем ShaderMaterial для создания красивых облаков с объемом
+        function createClouds() {
+            const cloudGeometry = new THREE.SphereGeometry(200, 100, 100);
+            const cloudMaterial = new THREE.ShaderMaterial({
+                uniforms: {
+                    time: { value: 0.0 },
+                    color: { value: new THREE.Color(0x777777) },
+                },
+                vertexShader: `
+                    varying vec3 vNormal;
+                    void main() {
+                        vNormal = normalize(normal);
+                        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                    }`,
+                fragmentShader: `
+                    uniform float time;
+                    uniform vec3 color;
+                    varying vec3 vNormal;
+                    void main() {
+                        float brightness = pow(0.5 - dot(vNormal, vec3(0, 0, 1)), 3.0);
+                        gl_FragColor = vec4(color * brightness, 1.0);
+                    }`,
+                transparent: true,
+                opacity: 0.5,
+            });
+
+            const cloud = new THREE.Mesh(cloudGeometry, cloudMaterial);
+            scene.add(cloud);
+            cloud.rotation.y += 0.01;
+            return cloud;
+        }
+
+        // Генерация существа с текстурой
+        function createNeuralCreature(position) {
+            const geometry = new THREE.SphereGeometry(0.5, 32, 32);
+            const texture = new THREE.TextureLoader().load('path_to_creature_texture.jpg'); // Текстура для существа
+            const material = new THREE.MeshStandardMaterial({ map: texture });
+            const creature = new THREE.Mesh(geometry, material);
+            creature.position.set(position.x, position.y, position.z);
+            scene.add(creature);
+            
+            function moveCreature() {
+                creature.position.x += Math.random() * 0.05 - 0.025;
+                creature.position.y += Math.random() * 0.05 - 0.025;
+                creature.position.z += Math.random() * 0.05 - 0.025;
+            }
+
+            return { creature, moveCreature };
+        }
+
+        // Генерация случайных фракталов и объектов
+        function createRandomWorld(position) {
+            const size = Math.random() * 0.5 + 0.3;
+            const geometry = new THREE.IcosahedronGeometry(size, 3);
+            const material = new THREE.MeshStandardMaterial({
+                color: Math.random() * 0xffffff,
+                metalness: 0.7,
+                roughness: 0.2,
+            });
+            const fractal = new THREE.Mesh(geometry, material);
+            fractal.position.set(position.x, position.y, position.z);
+            scene.add(fractal);
+
+            setTimeout(() => {
+                scene.remove(fractal);
+            }, 5000);
+        }
+
+        // Взаимодействие с миром
+        function interactWithUniverse(event) {
+            const x = ((event.clientX || event.touches[0].clientX) - renderer.domElement.offsetLeft) / renderer.domElement.width * 2 - 1;
+            const y = -((event.clientY || event.touches[0].clientY) - renderer.domElement.offsetTop) / renderer.domElement.height * 2 + 1;
+
+            const vector = new THREE.Vector3(x, y, 0);
+            vector.unproject(camera);
+            
+            const direction = vector.sub(camera.position).normalize();
+            const distance = -camera.position.z / direction.z;
+            const position = camera.position.clone().add(direction.multiplyScalar(distance));
+
+            createRandomWorld(position);
+            createNeuralCreature(position);
+        }
+
+        // Камера и анимация
+        camera.position.z = 5;
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Обновление облаков
+            scene.children.forEach(child => {
+                if (child instanceof THREE.Mesh && child.material instanceof THREE.ShaderMaterial) {
+                    child.material.uniforms.time.value += 0.01;
+                }
+            });
+
+            // Двигаем нейросетевые существа
+            neuralCreatures.forEach(creature => creature.moveCreature());
+
+            renderer.render(scene, camera);
+        }
+
+        // Массив для хранения нейросетевых существ
+        const neuralCreatures = [];
+
+        // Слушаем события для рисования и взаимодействия с миром
+        document.addEventListener('mousemove', function (event) {
+            interactWithUniverse(event);
+        });
+
+        document.addEventListener('click', function () {
+            interactWithUniverse(event);
+        });
+
+        animate();
+
+        // Функция для отображения разделов
+        function showSection(sectionId) {
+            const sections = document.querySelectorAll('.section');
+            sections.forEach(section => section.classList.remove('active'));
+            document.getElementById(sectionId).classList.add('active');
+        }
+    </script>
+</body>
+</html>
