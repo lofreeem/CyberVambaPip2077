@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vamba-like Adventure</title>
+    <style>
+        body { margin: 0; overflow: hidden; }
+        canvas { display: block; }
+        .ui {
+            position: fixed;
+            color: white;
+            font-family: 'Arial', sans-serif;
+            text-shadow: 2px 2px 2px black;
+            padding: 10px;
+        }
+        #health { top: 20px; left: 20px; }
+        #magicka { top: 60px; left: 20px; color: blue; }
+        #stamina { top: 100px; left: 20px; color: green; }
+        #quest { bottom: 20px; left: 20px; width: 300px; }
+        #dialogue {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.8);
+            padding: 20px;
+            color: white;
+            border: 2px solid goldenrod;
+        }
+    </style>
+</head>
+<body>
+    <div class="ui" id="health">:Жизни: 100</div>
+    <div class="ui" id="magicka">Магия: 100</div>
+    <div class="ui" id="stamina">Выносливость: 100</div>
+    <div class="ui" id="quest">Квест: найти желтый камень</div>
+    <div id="dialogue"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/PointerLockControls.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.3/howler.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
+
+    <script>
+        // Инициализация
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.shadowMap.enabled = true;
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // Управление
+        const controls = new THREE.PointerLockControls(camera, renderer.domElement);
+        let moveState = { forward: false, backward: false, left: false, right: false, run: false };
+        let isAttacking = false;
+
+        // Персонаж
+        let stats = {
+            health: 100,
+            magicka: 100,
+            stamina: 100,
+            level: 1,
+            gold: 50
+        };
+
+        // Создание мира
+        createTerrain();
+        addTrees();
+        spawnNPC();
+
+        // Игровой цикл
+        let clock = new THREE.Clock();
+        animate();
+
+        function createTerrain() {
+            // Освещение
+            const sun = new THREE.DirectionalLight(0xffffff, 1);
+            sun.position.set(100, 100, 100);
+            sun.castShadow = true;
+            scene.add(sun);
+            scene.add(new THREE.AmbientLight(0x404040));
+
+            // Земля
+            const groundGeometry = new THREE.PlaneGeometry(200, 200);
+            const groundMaterial = new THREE.MeshPhongMaterial({ color: 0x228B22 });
+            const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+            ground.rotation.x = -Math.PI/2;
+            ground.receiveShadow = true;
+            scene.add(ground);
+        }
+
+        function addTrees() {
+            const treeGeometry = new THREE.ConeGeometry(2, 5, 8);
+            const treeMaterial = new THREE.MeshPhongMaterial({ color: 0x006400 });
+            
+            for(let i = 0; i < 20; i++) {
+                const tree = new THREE.Mesh(treeGeometry, treeMaterial);
+                tree.position.set(
+                    Math.random() * 180 - 90,
+                    2.5,
+                    Math.random() * 180 - 90
+                );
+                tree.castShadow = true;
+                scene.add(tree);
+            }
+        }
+
+        function spawnNPC() {
+            const npcGeometry = new THREE.CylinderGeometry(0.5, 0.5, 2, 8);
+            const npcMaterial = new THREE.MeshPhongMaterial({ color: 0xFFD700 });
+            const npc = new THREE.Mesh(npcGeometry, npcMaterial);
+            npc.position.set(10, 1, -15);
+            npc.castShadow = true;
+            scene.add(npc);
+        }
+
+        function showDialogue(text) {
+            const dialogue = document.getElementById('dialogue');
+            dialogue.style.display = 'block';
+            dialogue.innerHTML = text;
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const delta = clock.getDelta();
+
+            // Движение
+            const speed = moveState.run ? 0.2 : 0.1;
+            const staminaDrain = moveState.run ? 10 : 5;
+
+            if(moveState.forward) controls.moveForward(speed);
+            if(moveState.backward) controls.moveBackward(speed);
+            if(moveState.left) controls.moveLeft(speed);
+            if(moveState.right) controls.moveRight(speed);
+
+            // Обновление статов
+            if(moveState.forward || moveState.backward || moveState.left || moveState.right) {
+                stats.stamina = Math.max(0, stats.stamina - staminaDrain * delta);
+            } else {
+                stats.stamina = Math.min(100, stats.stamina + 20 * delta);
+            }
+
+            // Обновление UI
+            document.getElementById('health').textContent = `Health: ${Math.round(stats.health)}`;
+            document.getElementById('magicka').textContent = `Magicka: ${Math.round(stats.magicka)}`;
+            document.getElementById('stamina').textContent = `Stamina: ${Math.round(stats.stamina)}`;
+
+            renderer.render(scene, camera);
+        }
+
+        // Обработчики событий
+        document.addEventListener('click', () => controls.lock());
+        
+        document.addEventListener('keydown', (e) => {
+            switch(e.code) {
+                case 'KeyW': moveState.forward = true; break;
+                case 'KeyS': moveState.backward = true; break;
+                case 'KeyA': moveState.left = true; break;
+                case 'KeyD': moveState.right = true; break;
+                case 'ShiftLeft': moveState.run = true; break;
+                case 'KeyE': showDialogue("Поздравляю вы его нашли - это пример одной из моих работ"); break;
+            }
+        });
+
+        document.addEventListener('keyup', (e) => {
+            switch(e.code) {
+                case 'KeyW': moveState.forward = false; break;
+                case 'KeyS': moveState.backward = false; break;
+                case 'KeyA': moveState.left = false; break;
+                case 'KeyD': moveState.right = false; break;
+                case 'ShiftLeft': moveState.run = false; break;
+            }
+        });
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // Стартовая позиция
+        camera.position.set(0, 5, 10);
+        controls.lock();
+    </script>
+</body>
+</html>
