@@ -1,41 +1,60 @@
+
 <!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Кроссплатформенное Приключение</title>
+    <title>Улучшенное Приключение</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?=Exo+2:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
+        :root {
+            --primary-glow: rgba(0, 191, 255, 0.7);
+            --accent-glow: rgba(255, 215, 0, 0.6);
+            --ui-bg: rgba(10, 20, 30, 0.7);
+            --border-color: rgba(255, 255, 255, 0.2);
+        }
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            touch-action: none;
             -webkit-tap-highlight-color: transparent;
         }
         
         body {
-            margin: 0;
             overflow: hidden;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Exo 2', sans-serif;
             background-color: #000;
-            position: fixed;
-            width: 100%;
-            height: 100%;
             color: white;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
         
         #gameCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
             display: block;
             width: 100%;
             height: 100%;
         }
         
+        /* UI Общие стили */
+        .ui-panel {
+            background: var(--ui-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
+        }
+
         /* Контейнер интерфейса */
         .ui-container {
             position: fixed;
-            width: 100%;
-            height: 100%;
+            inset: 0;
             pointer-events: none;
             z-index: 10;
         }
@@ -43,23 +62,19 @@
         /* Верхняя панель */
         .top-bar {
             position: absolute;
-            top: 10px;
-            left: 0;
-            right: 0;
+            top: 15px;
+            left: 15px;
+            right: 15px;
             display: flex;
             justify-content: space-between;
-            padding: 0 15px;
+            align-items: flex-start;
         }
         
         .stats-panel {
             display: flex;
             flex-direction: column;
-            gap: 8px;
-            background: rgba(0, 0, 0, 0.7);
+            gap: 10px;
             padding: 12px;
-            border-radius: 15px;
-            backdrop-filter: blur(5px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
         }
         
         .stat {
@@ -72,95 +87,80 @@
         .stat i {
             width: 20px;
             text-align: center;
+            text-shadow: 0 0 5px currentColor;
         }
         
         .progress-bar {
             width: 100px;
-            height: 6px;
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 3px;
+            height: 8px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 4px;
             overflow: hidden;
         }
         
         .progress-fill {
             height: 100%;
-            border-radius: 3px;
-            transition: width 0.3s;
+            border-radius: 4px;
+            transition: width 0.3s ease-out;
         }
         
-        .health-fill { background: #ff5252; }
-        .magicka-fill { background: #4fc3f7; }
-        .stamina-fill { background: #69f0ae; }
+        .health-fill { background: linear-gradient(to right, #ff5252, #ff1744); }
+        .magicka-fill { background: linear-gradient(to right, #40c4ff, #0091ea); }
+        .stamina-fill { background: linear-gradient(to right, #69f0ae, #00c853); }
         
         /* Правая панель */
         .right-panel {
             display: flex;
             flex-direction: column;
             gap: 15px;
-            background: rgba(0, 0, 0, 0.7);
             padding: 12px;
-            border-radius: 15px;
-            backdrop-filter: blur(5px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
         }
         
         .mini-map {
             width: 120px;
             height: 120px;
             background: rgba(0, 30, 60, 0.5);
-            border-radius: 10px;
-            border: 2px solid #4fc3f7;
+            border-radius: 12px;
+            border: 2px solid var(--primary-glow);
             overflow: hidden;
+            position: relative;
+        }
+        
+        .mini-map-player {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: #ff5252;
+            border-radius: 50%;
+            border: 1px solid white;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 8px #ff5252;
         }
         
         /* Нижняя панель */
         .bottom-bar {
             position: absolute;
             bottom: 20px;
-            left: 0;
-            right: 0;
+            left: 15px;
+            right: 15px;
             display: flex;
             justify-content: space-between;
-            padding: 0 15px;
             align-items: flex-end;
         }
         
         /* Контролы */
-        .controls {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            pointer-events: none;
-        }
-        
         .joystick-area {
-            width: 120px;
-            height: 120px;
+            width: 140px;
+            height: 140px;
             pointer-events: auto;
-        }
-        
-        .joystick {
-            width: 100%;
-            height: 100%;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border: 2px solid rgba(255, 255, 255, 0.3);
-        }
-        
-        .joystick-handle {
-            width: 50px;
-            height: 50px;
-            background: rgba(255, 255, 255, 0.7);
-            border-radius: 50%;
-            box-shadow: 0 0 10px rgba(0, 150, 255, 0.5);
+            position: relative;
         }
         
         .action-buttons {
-            display: flex;
-            flex-direction: column;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
             gap: 15px;
             pointer-events: auto;
         }
@@ -169,34 +169,40 @@
             width: 65px;
             height: 65px;
             border-radius: 50%;
-            background: rgba(255, 255, 255, 0.1);
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            border: none;
             color: white;
             font-size: 24px;
-            backdrop-filter: blur(5px);
             transition: all 0.2s;
+            cursor: pointer;
+            background: var(--ui-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border-color);
+        }
+        .action-btn:hover {
+            transform: scale(1.1);
+            border-color: var(--primary-glow);
+            box-shadow: 0 0 15px var(--primary-glow);
         }
         
         .action-btn:active {
-            transform: scale(0.9);
+            transform: scale(0.95);
             background: rgba(255, 255, 255, 0.3);
         }
-        
+
+        #jumpBtn { color: #40c4ff; }
         #runBtn { color: #69f0ae; }
-        #actionBtn { color: #4fc3f7; }
+        #actionBtn { color: #FFD700; }
         #attackBtn { color: #ff5252; }
+        #jumpBtn:hover { border-color: #40c4ff; box-shadow: 0 0 15px #40c4ff; }
+        #runBtn:hover { border-color: #69f0ae; box-shadow: 0 0 15px #69f0ae; }
+        #actionBtn:hover { border-color: #FFD700; box-shadow: 0 0 15px #FFD700; }
+        #attackBtn:hover { border-color: #ff5252; box-shadow: 0 0 15px #ff5252; }
         
         /* Квесты */
         .quest-panel {
-            background: rgba(0, 0, 0, 0.7);
             padding: 12px 15px;
-            border-radius: 15px;
             max-width: 300px;
-            backdrop-filter: blur(5px);
-            border: 1px solid rgba(255, 215, 0, 0.5);
+            border-left: 3px solid var(--accent-glow);
             pointer-events: auto;
         }
         
@@ -214,25 +220,27 @@
             opacity: 0.9;
         }
         
-        /* Диалоговое окно */
-        #dialogue {
-            display: none;
+        /* Модальные окна */
+        .modal {
             position: fixed;
             top: 50%;
             left: 50%;
-            transform: translate(-50%, -50%);
-            background: linear-gradient(to bottom, #1a1a2e, #16213e);
-            padding: 25px;
-            color: white;
-            border: 2px solid #FFD700;
-            border-radius: 15px;
+            transform: translate(-50%, -50%) scale(0.95);
             width: 90%;
             max-width: 400px;
             z-index: 100;
             pointer-events: auto;
-            box-shadow: 0 0 30px rgba(255, 215, 0, 0.5);
+            opacity: 0;
+            transition: transform 0.3s, opacity 0.3s;
+            padding: 25px;
+            border: 2px solid var(--accent-glow);
+            box-shadow: 0 0 30px var(--accent-glow);
         }
-        
+        .modal.open {
+            transform: translate(-50%, -50%) scale(1);
+            opacity: 1;
+        }
+
         #closeDialogue {
             position: absolute;
             top: 10px;
@@ -242,15 +250,15 @@
             color: white;
             font-size: 24px;
             cursor: pointer;
+            opacity: 0.7;
+            transition: opacity 0.2s;
         }
+        #closeDialogue:hover { opacity: 1; }
         
         /* Экран запуска */
         #startScreen {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            inset: 0;
             background: linear-gradient(to bottom, #0f2027, #203a43, #2c5364);
             display: flex;
             flex-direction: column;
@@ -260,20 +268,22 @@
             color: white;
             text-align: center;
             padding: 20px;
+            transition: opacity 0.5s;
         }
         
         .game-title {
-            font-size: 32px;
+            font-size: clamp(2rem, 10vw, 3.5rem);
             margin-bottom: 20px;
-            text-shadow: 0 0 10px rgba(0, 150, 255, 0.7);
+            text-shadow: 0 0 15px var(--accent-glow);
             color: #FFD700;
+            letter-spacing: 2px;
         }
         
         .game-instructions {
             max-width: 500px;
             margin-bottom: 30px;
             line-height: 1.6;
-            background: rgba(0, 0, 0, 0.5);
+            background: rgba(0, 0, 0, 0.4);
             padding: 20px;
             border-radius: 15px;
         }
@@ -288,44 +298,16 @@
             font-size: 18px;
             font-weight: bold;
             cursor: pointer;
-            box-shadow: 0 0 20px rgba(0, 150, 255, 0.7);
+            box-shadow: 0 0 20px var(--primary-glow);
             transition: all 0.3s;
         }
         
-        #startButton:active {
-            transform: scale(0.95);
-            box-shadow: 0 0 10px rgba(0, 150, 255, 0.5);
+        #startButton:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 30px var(--primary-glow);
         }
-        
-        /* Адаптация под разные экраны */
-        @media (max-height: 700px) {
-            .joystick-area {
-                width: 100px;
-                height: 100px;
-            }
-            
-            .action-btn {
-                width: 55px;
-                height: 55px;
-                font-size: 20px;
-            }
-            
-            .stats-panel, .right-panel {
-                padding: 8px;
-            }
-            
-            .stat {
-                font-size: 12px;
-            }
-            
-            .progress-bar {
-                width: 80px;
-            }
-            
-            .mini-map {
-                width: 100px;
-                height: 100px;
-            }
+        #startButton:active {
+            transform: scale(0.98);
         }
         
         /* Инвентарь */
@@ -336,31 +318,12 @@
             width: 50px;
             height: 50px;
             border-radius: 50%;
-            background: rgba(0, 0, 0, 0.7);
-            border: 2px solid rgba(255, 215, 0, 0.5);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #FFD700;
             font-size: 20px;
+            color: #FFD700;
             pointer-events: auto;
-            backdrop-filter: blur(5px);
         }
-        
-        #inventory {
-            display: none;
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: linear-gradient(to bottom, #1a1a2e, #16213e);
-            padding: 20px;
-            border: 2px solid #FFD700;
-            border-radius: 15px;
-            width: 90%;
-            max-width: 400px;
-            z-index: 100;
-            pointer-events: auto;
+        #inventoryBtn:hover {
+             border-color: var(--accent-glow); box-shadow: 0 0 15px var(--accent-glow);
         }
         
         .inventory-title {
@@ -371,15 +334,14 @@
         
         .inventory-slots {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
+            grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
             gap: 10px;
         }
         
         .inventory-slot {
-            width: 70px;
-            height: 70px;
+            aspect-ratio: 1/1;
             background: rgba(0, 0, 0, 0.5);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            border: 1px solid var(--border-color);
             border-radius: 10px;
             display: flex;
             align-items: center;
@@ -390,53 +352,60 @@
         /* Уведомления */
         .notification {
             position: fixed;
-            top: 100px;
+            top: 20px;
             left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.8);
+            transform: translateX(-50%) translateY(-100px);
             color: white;
-            padding: 10px 20px;
-            border-radius: 30px;
+            padding: 12px 25px;
             z-index: 150;
-            display: none;
-            border: 1px solid #4fc3f7;
+            border-left: 3px solid #40c4ff;
+            transition: transform 0.4s;
+        }
+        .notification.show {
+            transform: translateX(-50%) translateY(0);
         }
         
-        /* Для ПК */
-        .pc-controls-hint {
+        /* Подсказка для ПК */
+        #pcControlsHint {
             position: absolute;
-            bottom: 100px;
+            bottom: 20px;
             left: 50%;
             transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.7);
             padding: 10px 20px;
-            border-radius: 10px;
             text-align: center;
             display: none;
         }
         
-        /* Адаптация для очень маленьких экранов */
-        @media (max-width: 400px) {
-            .stats-panel {
-                transform: scale(0.8);
-                transform-origin: top left;
-            }
-            
-            .right-panel {
-                transform: scale(0.8);
-                transform-origin: top right;
-            }
-            
-            .quest-panel {
-                max-width: 200px;
-                font-size: 12px;
-            }
+        /* Индикатор осмотра и взаимодействия */
+        #lookIndicator, #interactPrompt {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            transition: opacity 0.2s;
         }
-        
-        /* Оптимизация для слабых устройств */
-        .performance-mode .tree, .performance-mode .rock, .performance-mode .detail {
+        #lookIndicator {
+            width: 10px;
+            height: 10px;
+            background: white;
+            border-radius: 50%;
+            opacity: 0.5;
+        }
+        #interactPrompt {
             display: none;
+            padding: 8px 12px;
+            background: rgba(0,0,0,0.7);
+            border-radius: 8px;
+            font-size: 14px;
         }
+        #interactPrompt span {
+            border: 1px solid white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-right: 8px;
+        }
+
     </style>
 </head>
 <body>
@@ -445,788 +414,598 @@
     <div class="ui-container">
         <!-- Верхняя панель -->
         <div class="top-bar">
-            <div class="stats-panel">
+            <div class="stats-panel ui-panel">
                 <div class="stat">
                     <i class="fas fa-heart" style="color: #ff5252;"></i>
-                    <div class="progress-bar">
-                        <div class="progress-fill health-fill" style="width: 100%;"></div>
-                    </div>
+                    <div class="progress-bar"><div class="progress-fill health-fill" id="health-fill"></div></div>
                     <span id="health-value">100</span>
                 </div>
                 <div class="stat">
-                    <i class="fas fa-gem" style="color: #4fc3f7;"></i>
-                    <div class="progress-bar">
-                        <div class="progress-fill magicka-fill" style="width: 100%;"></div>
-                    </div>
+                    <i class="fas fa-gem" style="color: #40c4ff;"></i>
+                    <div class="progress-bar"><div class="progress-fill magicka-fill" id="magicka-fill"></div></div>
                     <span id="magicka-value">100</span>
                 </div>
                 <div class="stat">
                     <i class="fas fa-bolt" style="color: #69f0ae;"></i>
-                    <div class="progress-bar">
-                        <div class="progress-fill stamina-fill" style="width: 100%;"></div>
-                    </div>
+                    <div class="progress-bar"><div class="progress-fill stamina-fill" id="stamina-fill"></div></div>
                     <span id="stamina-value">100</span>
                 </div>
             </div>
             
             <div class="right-panel">
-                <div class="mini-map" id="miniMap">
-                    <!-- Мини-карта будет здесь -->
-                </div>
+                <button id="inventoryBtn" class="action-btn">
+                    <i class="fas fa-backpack"></i>
+                </button>
             </div>
         </div>
-        
-        <!-- Кнопка инвентаря -->
-        <button id="inventoryBtn">
-            <i class="fas fa-backpack"></i>
-        </button>
         
         <!-- Нижняя панель -->
         <div class="bottom-bar">
-            <div class="controls">
-                <div class="joystick-area" id="moveJoystick">
-                    <div class="joystick">
-                        <div class="joystick-handle"></div>
-                    </div>
-                </div>
-            </div>
+            <div class="joystick-area" id="moveJoystick"></div>
             
-            <div class="quest-panel">
-                <div class="quest-title">
-                    <i class="fas fa-quest"></i>
-                    Активный квест
-                </div>
-                <div class="quest-description" id="quest-text">
-                    Найдите желтый камень мудрости
-                </div>
+            <div class="quest-panel ui-panel">
+                <div class="quest-title"><i class="fas fa-scroll"></i><span id="quest-title">Активный квест</span></div>
+                <div class="quest-description" id="quest-text">Найдите желтый камень мудрости.</div>
             </div>
             
             <div class="action-buttons">
-                <button class="action-btn" id="runBtn">
-                    <i class="fas fa-running"></i>
-                </button>
-                <button class="action-btn" id="actionBtn">
-                    <i class="fas fa-hand-rock"></i>
-                </button>
-                <button class="action-btn" id="attackBtn">
-                    <i class="fas fa-fist-raised"></i>
-                </button>
+                 <button class="action-btn" id="runBtn"><i class="fas fa-running"></i></button>
+                 <button class="action-btn" id="attackBtn"><i class="fas fa-fist-raised"></i></button>
+                 <button class="action-btn" id="jumpBtn"><i class="fas fa-arrow-up"></i></button>
+                 <button class="action-btn" id="actionBtn"><i class="fas fa-hand-paper"></i></button>
             </div>
         </div>
         
-        <!-- Подсказка для ПК -->
-        <div class="pc-controls-hint" id="pcControlsHint">
-            Управление: WASD - движение, Shift - бег, E - действие, ПКМ - атака
+        <div class="joystick-area" id="lookJoystick" style="position: absolute; right: 20px; bottom: 20px; opacity: 0.5;"></div>
+        
+        <div class="pc-controls-hint ui-panel" id="pcControlsHint">WASD - Движение, Shift - Бег, E - Действие, Space - Прыжок, Мышь - Осмотр</div>
+        
+        <!-- Центральные элементы UI -->
+        <div id="lookIndicator"></div>
+        <div id="interactPrompt"></div>
+        
+        <!-- Модальные окна -->
+        <div id="dialogue" class="modal ui-panel">
+            <button id="closeDialogue"><i class="fas fa-times"></i></button>
+            <p id="dialogue-text"></p>
         </div>
         
-        <!-- Диалоговое окно -->
-        <div id="dialogue">
-            <button id="closeDialogue">
-                <i class="fas fa-times"></i>
-            </button>
-            <p id="dialogue-text">Поздравляю, вы его нашли - это пример одной из моих работ</p>
-        </div>
-        
-        <!-- Инвентарь -->
-        <div id="inventory">
+        <div id="inventory" class="modal ui-panel">
             <h3 class="inventory-title">Инвентарь</h3>
-            <div class="inventory-slots">
-                <div class="inventory-slot"><i class="fas fa-coins" style="color: gold;"></i></div>
-                <div class="inventory-slot"><i class="fas fa-gem" style="color: blue;"></i></div>
-                <div class="inventory-slot"><i class="fas fa-leaf" style="color: green;"></i></div>
-                <div class="inventory-slot"><i class="fas fa-question"></i></div>
-                <div class="inventory-slot"><i class="fas fa-question"></i></div>
-                <div class="inventory-slot"><i class="fas fa-question"></i></div>
-                <div class="inventory-slot"><i class="fas fa-question"></i></div>
-                <div class="inventory-slot"><i class="fas fa-question"></i></div>
+            <div class="inventory-slots" id="inventory-slots">
+                <!-- Слоты будут добавлены динамически -->
             </div>
         </div>
         
-        <!-- Уведомление -->
-        <div class="notification" id="notification">
-            Новый квест получен!
-        </div>
+        <div class="notification ui-panel" id="notification"></div>
     </div>
     
     <!-- Экран запуска -->
     <div id="startScreen">
-        <h1 class="game-title">Кроссплатформенное Приключение</h1>
+        <h1 class="game-title">УЛУЧШЕННОЕ ПРИКЛЮЧЕНИЕ</h1>
         <div class="game-instructions">
-            <p>Исследуйте бесконечный мир, полный загадок и опасностей!</p>
-            <p id="controlsHint">Используйте левый джойстик для движения, правые кнопки для действий.</p>
-            <p>Найдите желтый камень мудрости и выполните другие квесты!</p>
+            <p>Исследуйте бесконечный процедурно-генерируемый мир, полный загадок и опасностей!</p>
+            <p id="controlsHint">Используйте джойстики для движения и осмотра, кнопки для действий.</p>
         </div>
-        <button id="startButton">Начать игру</button>
+        <button id="startButton">Начать Игру</button>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/nipplejs/0.9.0/nipplejs.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.3/howler.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
 
     <script>
-        // Основные переменные игры
-        let scene, camera, renderer;
-        let stats = {
-            health: 100,
-            magicka: 100,
-            stamina: 100,
-            level: 1,
-            gold: 50,
-            inventory: []
+    document.addEventListener('DOMContentLoaded', () => {
+        // --- DOM Элементы ---
+        const ui = {
+            startScreen: document.getElementById('startScreen'),
+            startButton: document.getElementById('startButton'),
+            gameCanvas: document.getElementById('gameCanvas'),
+            inventoryBtn: document.getElementById('inventoryBtn'),
+            inventory: document.getElementById('inventory'),
+            inventorySlots: document.getElementById('inventory-slots'),
+            dialogue: document.getElementById('dialogue'),
+            closeDialogue: document.getElementById('closeDialogue'),
+            dialogueText: document.getElementById('dialogue-text'),
+            notification: document.getElementById('notification'),
+            pcControlsHint: document.getElementById('pcControlsHint'),
+            controlsHint: document.getElementById('controlsHint'),
+            lookIndicator: document.getElementById('lookIndicator'),
+            interactPrompt: document.getElementById('interactPrompt'),
+            healthFill: document.getElementById('health-fill'),
+            magickaFill: document.getElementById('magicka-fill'),
+            staminaFill: document.getElementById('stamina-fill'),
+            healthValue: document.getElementById('health-value'),
+            magickaValue: document.getElementById('magicka-value'),
+            staminaValue: document.getElementById('stamina-value'),
+            questTitle: document.getElementById('quest-title'),
+            questText: document.getElementById('quest-text'),
         };
-        
-        let moveState = { 
-            forward: 0, 
-            backward: 0, 
-            left: 0, 
-            right: 0, 
-            run: false 
+
+        // --- Переменные игры ---
+        let scene, camera, renderer, clock, sun, hemisphereLight;
+        let audioCtx, sounds;
+        const player = {
+            height: 1.8,
+            turnSpeed: 2.5,
+            speed: 5.0,
+            runSpeed: 8.0,
+            jumpStrength: 8.0,
+            velocity: new THREE.Vector3(),
+            isGrounded: false
         };
+        const world = {
+            gravity: -25,
+            chunks: {},
+            chunkSize: 50,
+            viewDistance: 2 // в чанках
+        };
+        const state = {
+            stats: { health: 100, magicka: 100, stamina: 100 },
+            move: { forward: 0, backward: 0, left: 0, right: 0, run: false, jump: false },
+            look: { x: 0, y: 0, isEnabled: false },
+            isAttacking: false,
+            currentQuest: { id: 'find_stone', title: "Камень Мудрости", description: "Найдите легендарный желтый камень.", completed: false },
+            interactable: null
+        };
+
+        const isMobile = /Mobi/i.test(navigator.userAgent);
+        const performanceMode = isMobile;
+        state.look.isEnabled = !isMobile;
         
-        let isAttacking = false;
-        let worldSize = 1000;
-        let chunks = {};
-        let playerChunk = {x: 0, z: 0};
-        let quests = {
-            main: {
-                title: "Желтый камень мудрости",
-                description: "Найдите легендарный желтый камень мудрости",
-                completed: false
+        // --- Инициализация ---
+        function main() {
+            setupUI();
+            ui.startButton.addEventListener('click', initGame);
+        }
+
+        function setupUI() {
+            if (isMobile) {
+                ui.controlsHint.textContent = "Левый джойстик - движение, правый - осмотр.";
+            } else {
+                ui.controlsHint.textContent = "WASD - движение, Shift - бег, Space - прыжок, E - действие.";
+                ui.pcControlsHint.style.display = 'block';
+                setTimeout(() => ui.pcControlsHint.style.display = 'none', 5000);
             }
-        };
-        
-        // Определяем тип устройства
-        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-        let performanceMode = false;
-        
-        // Инициализация игры после загрузки страницы
-        document.addEventListener('DOMContentLoaded', function() {
-            const startScreen = document.getElementById('startScreen');
-            const startButton = document.getElementById('startButton');
-            const gameCanvas = document.getElementById('gameCanvas');
-            const inventoryBtn = document.getElementById('inventoryBtn');
-            const inventory = document.getElementById('inventory');
-            const closeDialogue = document.getElementById('closeDialogue');
-            const dialogue = document.getElementById('dialogue');
-            const pcControlsHint = document.getElementById('pcControlsHint');
-            const controlsHint = document.getElementById('controlsHint');
+            ui.inventoryBtn.addEventListener('click', () => toggleModal(ui.inventory));
+            ui.closeDialogue.addEventListener('click', () => toggleModal(ui.dialogue, false));
+            document.getElementById('actionBtn').addEventListener('click', doAction);
+            document.getElementById('jumpBtn').addEventListener('click', () => { state.move.jump = true; });
+            const runBtn = document.getElementById('runBtn');
+            runBtn.addEventListener('touchstart', () => state.move.run = true, { passive: true });
+            runBtn.addEventListener('touchend', () => state.move.run = false);
+            document.getElementById('attackBtn').addEventListener('click', doAttack);
+        }
+
+        function initGame() {
+            ui.startScreen.style.opacity = '0';
+            setTimeout(() => ui.startScreen.style.display = 'none', 500);
             
-            // Обновляем подсказки управления в зависимости от устройства
-            if (!isMobile) {
-                controlsHint.innerHTML = "Управление: WASD - движение, Shift - бег, E - действие, ПКМ - атака";
-                pcControlsHint.style.display = 'block';
-                setTimeout(() => {
-                    pcControlsHint.style.display = 'none';
-                }, 5000);
+            initScene();
+            initAudio();
+            initControls();
+            generateInitialWorld();
+            
+            camera.position.set(0, player.height, 5);
+            clock = new THREE.Clock();
+            animate();
+            playSound('start');
+        }
+        
+        function initScene() {
+            scene = new THREE.Scene();
+            
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.rotation.order = 'YXZ';
+
+            renderer = new THREE.WebGLRenderer({ canvas: ui.gameCanvas, antialias: !performanceMode, powerPreference: "high-performance" });
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = !performanceMode;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            
+            createSky();
+            
+            sun = new THREE.DirectionalLight(0xfff5e1, 1.5);
+            sun.position.set(50, 80, 20);
+            sun.castShadow = !performanceMode;
+            sun.shadow.mapSize.width = performanceMode ? 512 : 2048;
+            sun.shadow.mapSize.height = performanceMode ? 512 : 2048;
+            sun.shadow.camera.near = 0.5;
+            sun.shadow.camera.far = 200;
+            sun.shadow.camera.left = -100;
+            sun.shadow.camera.right = 100;
+            sun.shadow.camera.top = 100;
+            sun.shadow.camera.bottom = -100;
+            scene.add(sun);
+            scene.add(sun.target);
+
+            hemisphereLight = new THREE.HemisphereLight(0x6080ff, 0x305020, 0.8);
+            scene.add(hemisphereLight);
+        }
+
+        function createSky() {
+            const skyGeo = new THREE.SphereGeometry(500, 32, 15);
+            const skyMat = new THREE.ShaderMaterial({
+                uniforms: {
+                    topColor: { value: new THREE.Color(0x0077ff) },
+                    bottomColor: { value: new THREE.Color(0xffffff) },
+                    offset: { value: 33 },
+                    exponent: { value: 0.6 }
+                },
+                vertexShader: `
+                    varying vec3 vWorldPosition;
+                    void main() {
+                        vec4 worldPosition = modelMatrix * vec4(position, 1.0);
+                        vWorldPosition = worldPosition.xyz;
+                        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                    }
+                `,
+                fragmentShader: `
+                    uniform vec3 topColor;
+                    uniform vec3 bottomColor;
+                    uniform float offset;
+                    uniform float exponent;
+                    varying vec3 vWorldPosition;
+                    void main() {
+                        float h = normalize(vWorldPosition + offset).y;
+                        gl_FragColor = vec4(mix(bottomColor, topColor, max(pow(max(h, 0.0), exponent), 0.0)), 1.0);
+                    }
+                `,
+                side: THREE.BackSide
+            });
+            scene.add(new THREE.Mesh(skyGeo, skyMat));
+        }
+
+        // --- Управление ---
+        function initControls() {
+            if (isMobile) {
+                initMobileControls();
+            } else {
+                initDesktopControls();
             }
-            
-            // Обработчики интерфейса
-            startButton.addEventListener('click', initGame);
-            inventoryBtn.addEventListener('click', () => inventory.style.display = 'block');
-            closeDialogue.addEventListener('click', () => dialogue.style.display = 'none');
-            
-            // Закрытие инвентаря по клику вне его области
-            document.addEventListener('click', (e) => {
-                if (inventory.style.display === 'block' && !inventory.contains(e.target) && e.target !== inventoryBtn) {
-                    inventory.style.display = 'none';
-                }
+            window.addEventListener('resize', onWindowResize);
+        }
+
+        function initMobileControls() {
+            const createJoystick = (zoneId) => nipplejs.create({
+                zone: document.getElementById(zoneId),
+                mode: 'static',
+                position: { left: '50%', top: '50%' },
+                color: 'rgba(255,255,255,0.5)',
+                size: 120
+            });
+
+            const moveJoystick = createJoystick('moveJoystick');
+            moveJoystick.on('move', (evt, data) => {
+                const angle = data.angle.radian;
+                state.move.forward = Math.cos(angle) * data.force;
+                state.move.right = -Math.sin(angle) * data.force;
+            }).on('end', () => {
+                state.move.forward = 0;
+                state.move.right = 0;
             });
             
-            function initGame() {
-                startScreen.style.display = 'none';
-                
-                // Инициализация Three.js
-                scene = new THREE.Scene();
-                scene.background = new THREE.Color(0x87CEEB);
-                scene.fog = new THREE.Fog(0x87CEEB, 50, 200);
-                
-                camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
-                renderer = new THREE.WebGLRenderer({ 
-                    canvas: gameCanvas,
-                    antialias: true,
-                    powerPreference: "high-performance"
-                });
-                
-                // Настройка рендерера для лучшей производительности
-                renderer.shadowMap.enabled = true;
-                renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-                renderer.setPixelRatio(Math.min(2, window.devicePixelRatio));
-                renderer.setSize(window.innerWidth, window.innerHeight);
-                
-                // Активация режима производительности на слабых устройствах
-                if (isMobile && /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
-                    performanceMode = true;
-                    document.body.classList.add('performance-mode');
+            const lookJoystick = createJoystick('lookJoystick');
+            lookJoystick.on('move', (evt, data) => {
+                state.look.x = -data.vector.x;
+                state.look.y = -data.vector.y;
+            }).on('end', () => {
+                state.look.x = 0;
+                state.look.y = 0;
+            });
+        }
+        
+        function initDesktopControls() {
+            const keyMap = { KeyW: 'forward', KeyS: 'backward', KeyA: 'left', KeyD: 'right', ShiftLeft: 'run', Space: 'jump', KeyE: 'action' };
+            document.addEventListener('keydown', (e) => {
+                const action = keyMap[e.code];
+                if (action) {
+                    if (action === 'run' || action === 'jump') state.move[action] = true;
+                    else if (action === 'action') doAction();
+                    else state.move[action] = 1;
                 }
-                
-                // Создание мира
-                createSkybox();
-                generateWorld();
-                spawnNPCs();
-                
-                // Освещение
-                const sun = new THREE.DirectionalLight(0xffffff, 1);
-                sun.position.set(100, 100, 100);
-                sun.castShadow = true;
-                sun.shadow.mapSize.width = 1024;
-                sun.shadow.mapSize.height = 1024;
-                scene.add(sun);
-                
-                const ambientLight = new THREE.AmbientLight(0x404040, 0.7);
-                scene.add(ambientLight);
-                
-                // Игровой цикл
-                let clock = new THREE.Clock();
-                animate();
-                
-                function animate() {
-                    requestAnimationFrame(animate);
-                    const delta = Math.min(0.05, clock.getDelta());
-                    
-                    // Движение игрока
-                    updatePlayerPosition(delta);
-                    
-                    // Обновление статов
-                    updateStats(delta);
-                    
-                    // Обновление мира (генерация новых чанков)
-                    updateWorld();
-                    
-                    renderer.render(scene, camera);
+            });
+            document.addEventListener('keyup', (e) => {
+                const action = keyMap[e.code];
+                if (action) {
+                    if (action === 'run' || action === 'jump') state.move[action] = false;
+                    else state.move[action] = 0;
                 }
-                
-                // Инициализация управления
-                if (isMobile) {
-                    initMobileControls();
-                } else {
-                    initDesktopControls();
+            });
+
+            document.addEventListener('mousemove', (e) => {
+                if (document.pointerLockElement === document.body) {
+                    camera.rotation.y -= e.movementX / 500;
+                    camera.rotation.x -= e.movementY / 500;
+                    camera.rotation.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, camera.rotation.x));
                 }
-                
-                window.addEventListener('resize', () => {
-                    camera.aspect = window.innerWidth / window.innerHeight;
-                    camera.updateProjectionMatrix();
-                    renderer.setSize(window.innerWidth, window.innerHeight);
-                });
-                
-                // Стартовая позиция
-                camera.position.set(0, 10, 20);
-            }
+            });
+            document.addEventListener('click', () => {
+                document.body.requestPointerLock();
+                if(!audioCtx) initAudio(); // For browser autoplay policy
+            });
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        // --- Игровой цикл ---
+        function animate() {
+            requestAnimationFrame(animate);
+            const delta = Math.min(0.05, clock.getDelta());
             
-            function createSkybox() {
-                // Простое небо
-                const skyGeometry = new THREE.SphereGeometry(500, 32, 32);
-                const skyMaterial = new THREE.MeshBasicMaterial({ 
-                    color: 0x87CEEB, 
-                    side: THREE.BackSide 
-                });
-                const sky = new THREE.Mesh(skyGeometry, skyMaterial);
-                scene.add(sky);
-            }
+            updatePlayer(delta);
+            updateWorld();
+            checkInteraction();
+            updateStats(delta);
             
-            function generateWorld() {
-                // Генерация начального мира вокруг игрока
-                for (let x = -2; x <= 2; x++) {
-                    for (let z = -2; z <= 2; z++) {
-                        generateChunk(x, z);
-                    }
-                }
+            renderer.render(scene, camera);
+        }
+
+        function updatePlayer(delta) {
+            // Player rotation (look)
+            if (isMobile && (state.look.x !== 0 || state.look.y !== 0)) {
+                camera.rotation.y += state.look.x * player.turnSpeed * delta;
+                camera.rotation.x += state.look.y * player.turnSpeed * delta;
+                camera.rotation.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, camera.rotation.x));
             }
+
+            // Player movement
+            const currentSpeed = state.move.run && state.stats.stamina > 0 ? player.runSpeed : player.speed;
+            const forwardMovement = (state.move.forward - state.move.backward) * currentSpeed * delta;
+            const rightMovement = (state.move.right - state.move.left) * currentSpeed * delta;
             
-            function generateChunk(x, z) {
-                const chunkId = `${x},${z}`;
-                
-                // Если чанк уже существует, пропускаем
-                if (chunks[chunkId]) return;
-                
-                chunks[chunkId] = true;
-                
-                // Определяем биом в зависимости от позиции
-                const biomeType = getBiomeType(x, z);
-                
-                // Создаем землю для чанка
-                createGroundChunk(x, z, biomeType);
-                
-                // Добавляем объекты в зависимости от биома
-                populateChunk(x, z, biomeType);
+            camera.position.x += Math.sin(camera.rotation.y) * -forwardMovement + Math.cos(camera.rotation.y) * rightMovement;
+            camera.position.z += Math.cos(camera.rotation.y) * -forwardMovement - Math.sin(camera.rotation.y) * rightMovement;
+
+            // Gravity & Jump
+            player.velocity.y += world.gravity * delta;
+            camera.position.y += player.velocity.y * delta;
+            
+            if (state.move.jump && player.isGrounded) {
+                player.velocity.y = player.jumpStrength;
+                playSound('jump');
+                state.move.jump = false;
             }
-            
-            function getBiomeType(x, z) {
-                // Простая процедурная генерация биомов
-                const noiseValue = Math.sin(x * 0.3) + Math.cos(z * 0.3);
-                
-                if (noiseValue > 1) return 'forest';
-                if (noiseValue > 0) return 'plains';
-                if (noiseValue > -1) return 'desert';
-                return 'snow';
+
+            // Simple ground collision
+            if (camera.position.y < player.height) {
+                camera.position.y = player.height;
+                player.velocity.y = 0;
+                player.isGrounded = true;
+            } else {
+                player.isGrounded = false;
             }
-            
-            function createGroundChunk(x, z, biomeType) {
-                const size = 50;
-                const segments = performanceMode ? 10 : 20;
-                
-                const geometry = new THREE.PlaneGeometry(size, size, segments, segments);
-                
-                // Небольшая генерация высот для рельефа
-                if (!performanceMode) {
-                    const positions = geometry.attributes.position.array;
-                    for (let i = 0; i < positions.length; i += 3) {
-                        // Пропускаем координату Y (i+1)
-                        if ((i + 1) % 3 === 0) continue;
-                        
-                        const xPos = positions[i];
-                        const zPos = positions[i + 2];
-                        
-                        // Простой шум для высот
-                        const height = Math.sin(xPos * 0.1) * Math.cos(zPos * 0.1) * 2;
-                        positions[i + 1] = height;
-                    }
-                    
-                    geometry.computeVertexNormals();
-                }
-                
-                // Выбираем материал в зависимости от биома
-                let material;
-                switch(biomeType) {
-                    case 'forest':
-                        material = new THREE.MeshPhongMaterial({ color: 0x2E8B57 });
-                        break;
-                    case 'desert':
-                        material = new THREE.MeshPhongMaterial({ color: 0xF4A460 });
-                        break;
-                    case 'snow':
-                        material = new THREE.MeshPhongMaterial({ color: 0xF0F8FF });
-                        break;
-                    default:
-                        material = new THREE.MeshPhongMaterial({ color: 0x90EE90 });
-                }
-                
-                const ground = new THREE.Mesh(geometry, material);
-                ground.rotation.x = -Math.PI / 2;
-                ground.position.set(x * size, 0, z * size);
-                ground.receiveShadow = true;
-                scene.add(ground);
-                
-                return ground;
+
+            // Head bob
+            if(player.isGrounded && (forwardMovement !== 0 || rightMovement !== 0)) {
+                const bobTime = performance.now() * 0.01;
+                camera.position.y = player.height + Math.sin(bobTime) * 0.05 * (state.move.run ? 1.5 : 1);
             }
+        }
+        
+        function updateStats(delta) {
+            const isMoving = state.move.forward || state.move.backward || state.move.left || state.move.right;
+            if (isMoving && state.move.run) {
+                updateStat('stamina', -15 * delta);
+            } else {
+                updateStat('stamina', 20 * delta);
+            }
+            updateStat('magicka', 5 * delta);
             
-            function populateChunk(x, z, biomeType) {
-                const size = 50;
-                const objectCount = performanceMode ? 5 : 10 + Math.floor(Math.random() * 15);
-                
-                for (let i = 0; i < objectCount; i++) {
-                    const objX = x * size + (Math.random() - 0.5) * size;
-                    const objZ = z * size + (Math.random() - 0.5) * size;
-                    
-                    // Определяем тип объекта в зависимости от биома
-                    let object;
-                    if (biomeType === 'forest') {
-                        object = Math.random() > 0.3 ? createTree() : createRock();
-                    } else if (biomeType === 'desert') {
-                        object = Math.random() > 0.6 ? createCactus() : createRock();
-                    } else if (biomeType === 'snow') {
-                        object = Math.random() > 0.7 ? createPineTree() : createRock();
-                    } else {
-                        object = Math.random() > 0.8 ? createTree() : createFlower();
-                    }
-                    
-                    object.position.set(objX, 0, objZ);
-                    scene.add(object);
-                }
-                
-                // С небольшой вероятностью добавляем NPC
-                if (Math.random() > 0.7 && !performanceMode) {
-                    const npc = createNPC();
-                    npc.position.set(
-                        x * size + (Math.random() - 0.5) * size,
-                        0,
-                        z * size + (Math.random() - 0.5) * size
-                    );
-                    scene.add(npc);
+            const healthFill = ui.healthFill;
+            const magickaFill = ui.magickaFill;
+            const staminaFill = ui.staminaFill;
+
+            healthFill.style.width = `${state.stats.health}%`;
+            magickaFill.style.width = `${state.stats.magicka}%`;
+            staminaFill.style.width = `${state.stats.stamina}%`;
+
+            ui.healthValue.textContent = Math.round(state.stats.health);
+            ui.magickaValue.textContent = Math.round(state.stats.magicka);
+            ui.staminaValue.textContent = Math.round(state.stats.stamina);
+        }
+        
+        function updateStat(stat, value) {
+            state.stats[stat] = Math.max(0, Math.min(100, state.stats[stat] + value));
+        }
+        
+        // --- Мир ---
+        function generateInitialWorld() {
+            const { x, z } = getPlayerChunkCoords();
+            for (let i = x - world.viewDistance; i <= x + world.viewDistance; i++) {
+                for (let j = z - world.viewDistance; j <= z + world.viewDistance; j++) {
+                    generateChunk(i, j);
                 }
             }
+        }
+
+        function updateWorld() {
+            const { x, z } = getPlayerChunkCoords();
+            // Simple world update for now. More complex logic like chunk loading/unloading can be added.
+            sun.position.set(camera.position.x + 50, camera.position.y + 80, camera.position.z + 20);
+            sun.target.position.copy(camera.position);
+        }
+        
+        function getPlayerChunkCoords() {
+            return {
+                x: Math.floor(camera.position.x / world.chunkSize),
+                z: Math.floor(camera.position.z / world.chunkSize)
+            };
+        }
+
+        function generateChunk(x, z) {
+            const chunkId = `${x},${z}`;
+            if (world.chunks[chunkId]) return;
+
+            const ground = createGroundChunk(x, z);
+            scene.add(ground);
+            world.chunks[chunkId] = { ground };
             
-            function createTree() {
-                const height = 5 + Math.random() * 3;
-                const segments = performanceMode ? 4 : 8;
-                
-                // Ствол
-                const trunkGeometry = new THREE.CylinderGeometry(0.5, 0.7, height, segments);
-                const trunkMaterial = new THREE.MeshPhongMaterial({ color: 0x8B4513 });
-                const trunk = new THREE.Mesh(trunkGeometry, trunkMaterial);
-                
-                // Крона
-                const crownGeometry = new THREE.SphereGeometry(2, segments, segments/2);
-                const crownMaterial = new THREE.MeshPhongMaterial({ color: 0x228B22 });
-                const crown = new THREE.Mesh(crownGeometry, crownMaterial);
-                crown.position.y = height / 2 + 1.5;
-                crown.scale.set(1, 1.5, 1);
-                
-                const tree = new THREE.Group();
-                tree.add(trunk);
-                tree.add(crown);
-                
-                if (!performanceMode) {
-                    tree.castShadow = true;
-                    tree.receiveShadow = true;
-                }
-                
-                return tree;
+            // Add objects
+            if (x === 0 && z === 0) { // Spawn quest item in first chunk
+                 const stone = createYellowStone();
+                 stone.position.set(5, 1, 5);
+                 scene.add(stone);
+            } else {
+                // Procedural objects here
             }
+        }
+
+        function createGroundChunk(x, z) {
+            const size = world.chunkSize;
+            const segments = performanceMode ? 8 : 16;
+            const geometry = new THREE.PlaneGeometry(size, size, segments, segments);
             
-            function createPineTree() {
-                const height = 6 + Math.random() * 4;
-                const segments = performanceMode ? 4 : 8;
-                
-                // Ствол
-                const trunkGeometry = new THREE.CylinderGeometry(0.4, 0.6, height, segments);
-                const trunkMaterial = new THREE.MeshPhongMaterial({ color: 0x8B4513 });
-                const trunk = new THREE.Mesh(trunkGeometry, trunkMaterial);
-                
-                // Крона (конус)
-                const crownGeometry = new THREE.ConeGeometry(2, 4, segments);
-                const crownMaterial = new THREE.MeshPhongMaterial({ color: 0x2E8B57 });
-                const crown = new THREE.Mesh(crownGeometry, crownMaterial);
-                crown.position.y = height / 2 + 2;
-                
-                const tree = new THREE.Group();
-                tree.add(trunk);
-                tree.add(crown);
-                
-                if (!performanceMode) {
-                    tree.castShadow = true;
-                    tree.receiveShadow = true;
+            const material = new THREE.MeshStandardMaterial({ color: 0x55aa55, roughness: 0.8, metalness: 0.2 });
+            const ground = new THREE.Mesh(geometry, material);
+            ground.rotation.x = -Math.PI / 2;
+            ground.position.set(x * size + size/2, 0, z * size + size/2);
+            ground.receiveShadow = !performanceMode;
+            return ground;
+        }
+
+        function createYellowStone() {
+            const geometry = new THREE.IcosahedronGeometry(0.5, 0);
+            const material = new THREE.MeshStandardMaterial({ 
+                color: 0xFFD700,
+                emissive: 0xBB9900,
+                emissiveIntensity: 1.5,
+                metalness: 0.5,
+                roughness: 0.3
+            });
+            const stone = new THREE.Mesh(geometry, material);
+            stone.castShadow = true;
+            stone.userData.interactable = true;
+            stone.userData.interactionText = 'Взять Камень';
+            stone.userData.onInteract = () => {
+                if (state.currentQuest.id === 'find_stone' && !state.currentQuest.completed) {
+                    state.currentQuest.completed = true;
+                    showDialogue("Вы нашли Камень Мудрости! Его свет наполняет вас силой.");
+                    showNotification("Квест выполнен: Камень Мудрости!");
+                    ui.questText.textContent = "Исследуйте мир дальше.";
+                    stone.visible = false;
+                    state.interactable = null;
                 }
-                
-                return tree;
-            }
-            
-            function createRock() {
-                const geometry = new THREE.DodecahedronGeometry(1 + Math.random() * 1, performanceMode ? 0 : 1);
-                const material = new THREE.MeshPhongMaterial({ color: 0x708090 });
-                const rock = new THREE.Mesh(geometry, material);
-                
-                if (!performanceMode) {
-                    rock.castShadow = true;
-                    rock.receiveShadow = true;
-                }
-                
-                // Немного поворачиваем и сдвигаем камень
-                rock.rotation.set(
-                    Math.random() * Math.PI,
-                    Math.random() * Math.PI,
-                    Math.random() * Math.PI
-                );
-                
-                rock.scale.set(
-                    0.8 + Math.random() * 0.5,
-                    0.8 + Math.random() * 0.5,
-                    0.8 + Math.random() * 0.5
-                );
-                
-                return rock;
-            }
-            
-            function createCactus() {
-                const height = 3 + Math.random() * 2;
-                const segments = performanceMode ? 4 : 6;
-                
-                // Основной стебель
-                const stemGeometry = new THREE.CylinderGeometry(0.5, 0.7, height, segments);
-                const stemMaterial = new THREE.MeshPhongMaterial({ color: 0x556B2F });
-                const stem = new THREE.Mesh(stemGeometry, stemMaterial);
-                
-                // "Ветки" кактуса
-                const armGeometry = new THREE.CylinderGeometry(0.3, 0.3, height * 0.7, segments);
-                const armMaterial = new THREE.MeshPhongMaterial({ color: 0x556B2F });
-                const arm1 = new THREE.Mesh(armGeometry, armMaterial);
-                arm1.rotation.z = Math.PI / 4;
-                arm1.position.set(0.7, height * 0.2, 0);
-                
-                const arm2 = new THREE.Mesh(armGeometry, armMaterial);
-                arm2.rotation.z = -Math.PI / 4;
-                arm2.position.set(-0.7, height * 0.3, 0);
-                
-                const cactus = new THREE.Group();
-                cactus.add(stem);
-                cactus.add(arm1);
-                cactus.add(arm2);
-                
-                if (!performanceMode) {
-                    cactus.castShadow = true;
-                    cactus.receiveShadow = true;
-                }
-                
-                return cactus;
-            }
-            
-            function createFlower() {
-                const stemGeometry = new THREE.CylinderGeometry(0.05, 0.05, 1, 6);
-                const stemMaterial = new THREE.MeshPhongMaterial({ color: 0x00FF00 });
-                const stem = new THREE.Mesh(stemGeometry, stemMaterial);
-                
-                // Лепестки
-                const petalGeometry = new THREE.SphereGeometry(0.3, performanceMode ? 6 : 8, performanceMode ? 4 : 6);
-                const petalMaterial = new THREE.MeshPhongMaterial({ color: 0xFF69B4 });
-                
-                const petals = new THREE.Group();
-                const petalCount = performanceMode ? 4 : 6;
-                for (let i = 0; i < petalCount; i++) {
-                    const angle = (i / petalCount) * Math.PI * 2;
-                    const petal = new THREE.Mesh(petalGeometry, petalMaterial);
-                    petal.position.set(Math.cos(angle) * 0.4, 0.5, Math.sin(angle) * 0.4);
-                    petal.scale.set(1, 0.3, 1);
-                    petals.add(petal);
-                }
-                
-                // Центр цветка
-                const centerGeometry = new THREE.SphereGeometry(0.2, performanceMode ? 6 : 8, performanceMode ? 4 : 6);
-                const centerMaterial = new THREE.MeshPhongMaterial({ color: 0xFFFF00 });
-                const center = new THREE.Mesh(centerGeometry, centerMaterial);
-                center.position.y = 0.5;
-                
-                const flower = new THREE.Group();
-                flower.add(stem);
-                flower.add(petals);
-                flower.add(center);
-                
-                if (!performanceMode) {
-                    flower.castShadow = true;
-                    flower.receiveShadow = true;
-                }
-                
-                return flower;
-            }
-            
-            function createNPC() {
-                const bodyGeometry = new THREE.CylinderGeometry(0.5, 0.5, 2, 8);
-                const bodyMaterial = new THREE.MeshPhongMaterial({ color: 0xFFD700 });
-                const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
-                
-                // Голова
-                const headGeometry = new THREE.SphereGeometry(0.6, 16, 12);
-                const headMaterial = new THREE.MeshPhongMaterial({ color: 0xFFCC99 });
-                const head = new THREE.Mesh(headGeometry, headMaterial);
-                head.position.y = 1.5;
-                
-                const npc = new THREE.Group();
-                npc.add(body);
-                npc.add(head);
-                
-                if (!performanceMode) {
-                    npc.castShadow = true;
-                    npc.receiveShadow = true;
-                }
-                
-                return npc;
-            }
-            
-            function spawnNPCs() {
-                // Добавляем несколько NPC в мир
-                for (let i = 0; i < (performanceMode ? 2 : 5); i++) {
-                    const npc = createNPC();
-                    npc.position.set(
-                        Math.random() * 100 - 50,
-                        0,
-                        Math.random() * 100 - 50
-                    );
-                    scene.add(npc);
+            };
+            return stone;
+        }
+
+        // --- Интерактивность ---
+        function checkInteraction() {
+            const raycaster = new THREE.Raycaster(camera.position, new THREE.Vector3(0,0,-1).applyQuaternion(camera.quaternion));
+            const intersects = raycaster.intersectObjects(scene.children);
+            let foundInteractable = null;
+
+            for (const intersect of intersects) {
+                if (intersect.object.userData.interactable && intersect.distance < 4) {
+                    foundInteractable = intersect.object;
+                    break;
                 }
             }
             
-            function updatePlayerPosition(delta) {
-                // Вычисляем скорость в зависимости от бега
-                const speed = moveState.run ? 0.2 : 0.1;
-                
-                // Двигаем камеру (игрока)
-                camera.position.x += (moveState.right - moveState.left) * speed;
-                camera.position.z += (moveState.forward - moveState.backward) * speed;
-                
-                // Ограничиваем высоту камеры
-                camera.position.y = 10;
-                
-                // Обновляем текущий чанк игрока
-                const chunkSize = 50;
-                const newChunkX = Math.floor(camera.position.x / chunkSize);
-                const newChunkZ = Math.floor(camera.position.z / chunkSize);
-                
-                if (newChunkX !== playerChunk.x || newChunkZ !== playerChunk.z) {
-                    playerChunk.x = newChunkX;
-                    playerChunk.z = newChunkZ;
-                    
-                    // Генерируем новые чанки вокруг игрока
-                    for (let x = newChunkX - 2; x <= newChunkX + 2; x++) {
-                        for (let z = newChunkZ - 2; z <= newChunkZ + 2; z++) {
-                            generateChunk(x, z);
-                        }
-                    }
-                }
-                
-                // Небольшая анимация камеры при движении
-                if (moveState.forward !== 0 || moveState.backward !== 0 || 
-                    moveState.left !== 0 || moveState.right !== 0) {
-                    camera.position.y = 10 + Math.sin(Date.now() * 0.01) * 0.5;
-                }
+            if (foundInteractable && foundInteractable !== state.interactable) {
+                state.interactable = foundInteractable;
+                ui.interactPrompt.innerHTML = `<span>${isMobile ? 'PRESS' : 'E'}</span> ${state.interactable.userData.interactionText}`;
+                ui.interactPrompt.style.display = 'block';
+            } else if (!foundInteractable && state.interactable) {
+                state.interactable = null;
+                ui.interactPrompt.style.display = 'none';
             }
-            
-            function updateStats(delta) {
-                // Обновление статов
-                if (moveState.forward !== 0 || moveState.backward !== 0 || 
-                    moveState.left !== 0 || moveState.right !== 0) {
-                    const staminaDrain = moveState.run ? 10 : 5;
-                    stats.stamina = Math.max(0, stats.stamina - staminaDrain * delta);
-                } else {
-                    stats.stamina = Math.min(100, stats.stamina + 20 * delta);
-                }
-                
-                // Автоматическое восстановление маны
-                stats.magicka = Math.min(100, stats.magicka + 5 * delta);
-                
-                // Обновление UI
-                document.getElementById('health-value').textContent = Math.round(stats.health);
-                document.getElementById('magicka-value').textContent = Math.round(stats.magicka);
-                document.getElementById('stamina-value').textContent = Math.round(stats.stamina);
-                
-                document.querySelector('.health-fill').style.width = `${stats.health}%`;
-                document.querySelector('.magicka-fill').style.width = `${stats.magicka}%`;
-                document.querySelector('.stamina-fill').style.width = `${stats.stamina}%`;
+        }
+        
+        function doAction() {
+            if (state.interactable && state.interactable.userData.onInteract) {
+                state.interactable.userData.onInteract();
+                playSound('success');
+            } else {
+                playSound('click');
             }
-            
-            function updateWorld() {
-                // Здесь можно добавить логику обновления мира
-                // Например, движение NPC, respawn ресурсов и т.д.
+        }
+        
+        function doAttack() {
+            if (!state.isAttacking && state.stats.stamina > 15) {
+                state.isAttacking = true;
+                updateStat('stamina', -15);
+                playSound('attack');
+                // Attack animation/logic here
+                setTimeout(() => { state.isAttacking = false; }, 500);
             }
-            
-            function initMobileControls() {
-                // Левый джойстик для движения
-                const moveJoystick = nipplejs.create({
-                    zone: document.getElementById('moveJoystick'),
-                    mode: 'static',
-                    position: { left: '50%', top: '50%' },
-                    color: 'white',
-                    size: 120
-                });
-                
-                moveJoystick.on('move', function(evt, data) {
-                    const angle = data.angle.radian;
-                    const force = data.force;
-                    
-                    // Определяем направление движения на основе угла
-                    moveState.forward = Math.max(0, -Math.cos(angle) * force);
-                    moveState.backward = Math.max(0, Math.cos(angle) * force);
-                    moveState.left = Math.max(0, Math.sin(angle) * force);
-                    moveState.right = Math.max(0, -Math.sin(angle) * force);
-                });
-                
-                moveJoystick.on('end', function() {
-                    // Сбрасываем состояние движения при отпускании джойстика
-                    moveState.forward = 0;
-                    moveState.backward = 0;
-                    moveState.left = 0;
-                    moveState.right = 0;
-                });
-                
-                // Кнопка бега
-                const runBtn = document.getElementById('runBtn');
-                runBtn.addEventListener('touchstart', function() {
-                    if (stats.stamina > 10) {
-                        moveState.run = true;
-                    }
-                });
-                
-                runBtn.addEventListener('touchend', function() {
-                    moveState.run = false;
-                });
-                
-                // Кнопка действия
-                document.getElementById('actionBtn').addEventListener('click', function() {
-                    showDialogue("Поздравляю, вы нашли желтый камень мудрости! Это пример одной из моих работ.");
-                    
-                    // Помечаем квест как выполненный
-                    quests.main.completed = true;
-                    document.getElementById('quest-text').textContent = "Вернитесь к NPC для получения награды";
-                    
-                    // Показываем уведомление
-                    showNotification("Квест выполнен: Желтый камень мудрости!");
-                });
-                
-                // Кнопка атаки
-                document.getElementById('attackBtn').addEventListener('click', function() {
-                    if (!isAttacking && stats.stamina > 15) {
-                        isAttacking = true;
-                        stats.stamina -= 15;
-                        
-                        // Здесь может быть логика атаки
-                        setTimeout(() => { isAttacking = false; }, 500);
-                    }
-                });
+        }
+        
+        // --- UI Функции ---
+        function toggleModal(modal, forceState) {
+            const isOpen = forceState !== undefined ? forceState : !modal.classList.contains('open');
+            if (isOpen) {
+                modal.style.display = 'block';
+                setTimeout(() => modal.classList.add('open'), 10);
+            } else {
+                modal.classList.remove('open');
+                setTimeout(() => modal.style.display = 'none', 300);
             }
-            
-            function initDesktopControls() {
-                // Скрываем мобильные элементы управления
-                document.getElementById('moveJoystick').style.display = 'none';
-                document.querySelector('.action-buttons').style.display = 'none';
-                
-                // Обработка клавиатуры
-                document.addEventListener('keydown', (e) => {
-                    switch(e.code) {
-                        case 'KeyW': moveState.forward = 1; break;
-                        case 'KeyS': moveState.backward = 1; break;
-                        case 'KeyA': moveState.left = 1; break;
-                        case 'KeyD': moveState.right = 1; break;
-                        case 'ShiftLeft': moveState.run = true; break;
-                        case 'KeyE': 
-                            showDialogue("Поздравляю, вы нашли желтый камень мудрости! Это пример одной из моих работ.");
-                            quests.main.completed = true;
-                            document.getElementById('quest-text').textContent = "Вернитесь к NPC для получения награды";
-                            showNotification("Квест выполнен: Желтый камень мудрости!");
-                            break;
-                    }
-                });
-                
-                document.addEventListener('keyup', (e) => {
-                    switch(e.code) {
-                        case 'KeyW': moveState.forward = 0; break;
-                        case 'KeyS': moveState.backward = 0; break;
-                        case 'KeyA': moveState.left = 0; break;
-                        case 'KeyD': moveState.right = 0; break;
-                        case 'ShiftLeft': moveState.run = false; break;
-                    }
-                });
-                
-                // Обработка мыши
-                document.addEventListener('mousedown', (e) => {
-                    if (e.button === 2) { // Правая кнопка мыши
-                        if (!isAttacking && stats.stamina > 15) {
-                            isAttacking = true;
-                            stats.stamina -= 15;
-                            setTimeout(() => { isAttacking = false; }, 500);
-                        }
-                    }
-                });
-                
-                // Предотвращаем контекстное меню при клике правой кнопкой
-                document.addEventListener('contextmenu', (e) => e.preventDefault());
+            playSound('click');
+        }
+
+        function showDialogue(text) {
+            ui.dialogueText.textContent = text;
+            toggleModal(ui.dialogue, true);
+        }
+        
+        function showNotification(text) {
+            ui.notification.textContent = text;
+            ui.notification.classList.add('show');
+            setTimeout(() => {
+                ui.notification.classList.remove('show');
+            }, 3000);
+        }
+        
+        // --- Аудио ---
+        function initAudio() {
+            try {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                sounds = {
+                    click: createSound(220, 'square', 0.1),
+                    jump: createSound(440, 'sine', 0.2, 0.1),
+                    attack: createSound(110, 'sawtooth', 0.3, 0.05),
+                    success: createSound(880, 'triangle', 0.3, 0.05),
+                    start: createSound(660, 'sine', 0.4, 0.05)
+                };
+            } catch(e) {
+                console.warn("Web Audio API is not supported in this browser");
             }
-            
-            function showDialogue(text) {
-                const dialogue = document.getElementById('dialogue');
-                const dialogueText = document.getElementById('dialogue-text');
-                
-                dialogueText.textContent = text;
-                dialogue.style.display = 'block';
+        }
+
+        function createSound(freq, type, duration, startVolume = 0.2) {
+            return () => {
+                if (!audioCtx) return;
+                const oscillator = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                oscillator.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+
+                oscillator.type = type;
+                oscillator.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                gainNode.gain.setValueAtTime(startVolume, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+
+                oscillator.start(audioCtx.currentTime);
+                oscillator.stop(audioCtx.currentTime + duration);
+            };
+        }
+
+        function playSound(soundName) {
+            if (sounds && sounds[soundName]) {
+                sounds[soundName]();
             }
-            
-            function showNotification(text) {
-                const notification = document.getElementById('notification');
-                notification.textContent = text;
-                notification.style.display = 'block';
-                
-                setTimeout(() => {
-                    notification.style.display = 'none';
-                }, 3000);
-            }
-        });
+        }
+
+        // --- Запуск ---
+        main();
+    });
     </script>
 </body>
 </html>
