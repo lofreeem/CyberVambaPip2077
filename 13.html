@@ -1,167 +1,304 @@
-<!DOCTYPE html>
-<html>
+<!doctype html>
+<html lang="ru">
 <head>
-    <title>Visually Enhanced Universe</title>
-    <style>
-        body {
-            margin: 0;
-            overflow: hidden;
-            background: radial-gradient(circle, #000, #111); /* Градиентный фон */
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-             font-family: sans-serif;
-             color: #fff;
-        }
-        #container {
-            position: relative;
-            width: 100vw;
-            height: 100vh;
-           display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        .particle {
-            position: absolute;
-             width: 4px;  /* Увеличиваем размер частиц */
-           height: 4px; /* Увеличиваем размер частиц */
-             border-radius: 50%;
-           transform-origin: center;
-            will-change: transform;
-           mix-blend-mode: overlay;
-            filter: blur(1.5px);/* Добавляем размытие */
-         opacity: 0.5; /*  прозрачность частиц */
-        }
-        #message {
-             position: absolute;
-            top: 20px;
-            left: 20px;
-           font-size: 14px;
-          opacity: 0.7;
-         }
-    </style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Vamba — 3D Luxe Brand (RU)</title>
+  <meta name="description" content="Одностраничный 3D-сайт уровня топ-брендов: стекло, иридесценция, блум, кино-зерно, частицы и невозможная геометрия. Всё бесплатно и в одном файле." />
+  <meta property="og:title" content="Vamba — 3D Luxe Brand (RU)" />
+  <meta property="og:description" content="WebGL/Three.js + постобработка, супер-гладкие анимации, русская версия. by Vamba." />
+  <meta property="og:type" content="website" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;500;800&display=swap" rel="stylesheet">
+  <!-- CDN: Three.js + PostProcessing + GSAP -->
+  <script src="https://unpkg.com/three@0.154.0/build/three.min.js"></script>
+  <script src="https://unpkg.com/three@0.154.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://unpkg.com/three@0.154.0/examples/js/postprocessing/EffectComposer.js"></script>
+  <script src="https://unpkg.com/three@0.154.0/examples/js/postprocessing/RenderPass.js"></script>
+  <script src="https://unpkg.com/three@0.154.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
+  <script src="https://unpkg.com/three@0.154.0/examples/js/postprocessing/FilmPass.js"></script>
+  <script src="https://unpkg.com/three@0.154.0/examples/js/shaders/CopyShader.js"></script>
+  <script src="https://unpkg.com/three@0.154.0/examples/js/postprocessing/ShaderPass.js"></script>
+  <script src="https://unpkg.com/gsap@3.12.2/dist/gsap.min.js"></script>
+  <style>
+    :root{--bg:#07090c;--fg:#e7ebf2;--muted:#8a93a6;--accent:#8ab4ff;--accent2:#b388ff}
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;background:radial-gradient(1200px 800px at 80% -10%, #122036 0%, #0a0f18 40%, var(--bg) 100%);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial;color:var(--fg);overflow-x:hidden}
+    a{color:inherit;text-decoration:none}
+    .noise::before{content:"";position:fixed;inset:0;pointer-events:none;mix-blend-mode:overlay;opacity:.06;background-image:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="140" height="140"><filter id="n"><feTurbulence baseFrequency=".65" numOctaves="2" seed="3"/></filter><rect width="100%" height="100%" filter="url(%23n)"/></svg>');background-size:140px 140px}
+    header{position:fixed;top:16px;left:16px;right:16px;z-index:50;display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-radius:16px;backdrop-filter:blur(10px);background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.02));border:1px solid rgba(255,255,255,.08)}
+    .brand{display:flex;gap:12px;align-items:center}
+    .logo{width:44px;height:44px;border-radius:12px;background:conic-gradient(from 120deg,var(--accent),var(--accent2),var(--accent));display:flex;align-items:center;justify-content:center;font-weight:800;color:#071020;box-shadow:0 8px 30px rgba(139,180,255,.18)}
+    nav{display:flex;gap:8px;align-items:center}
+    .btn{padding:10px 14px;border-radius:12px;border:1px solid rgba(255,255,255,.08);backdrop-filter:blur(8px);background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.015));cursor:pointer;font-weight:700;transition:transform .2s,box-shadow .2s}
+    .btn:hover{transform:translateY(-2px);box-shadow:0 12px 34px rgba(138,180,255,.22)}
+    main{display:grid;grid-template-columns:1fr 420px;gap:28px;padding:120px 48px;min-height:100vh}
+    .hero{position:relative;min-height:680px;border-radius:22px;padding:28px;overflow:hidden}
+    canvas{display:block;width:100%;height:100%;border-radius:20px}
+    .overlay{position:absolute;inset:24px;border-radius:16px;pointer-events:none}
+    .title{position:absolute;left:48px;top:48px;z-index:30;max-width:640px}
+    h1{font-size:64px;line-height:1;margin:0;font-weight:800;letter-spacing:-1px;text-shadow:0 10px 40px rgba(138,180,255,.25)}
+    p.lead{margin:14px 0 0;color:var(--muted);font-size:16px}
+    .links{position:sticky;top:96px;align-self:start;padding:18px;border-radius:16px;background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.012));border:1px solid rgba(255,255,255,.06);backdrop-filter:blur(8px);transform-style:preserve-3d;perspective:800px}
+    .links h3{margin:0 0 12px 0}
+    .link-card{display:flex;gap:12px;align-items:center;padding:10px;border-radius:12px;margin-bottom:10px;transition:transform .25s,box-shadow .25s;cursor:pointer;transform-style:preserve-3d;box-shadow:0 6px 20px rgba(0,0,0,.2);border:1px solid rgba(255,255,255,.05);background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.02))}
+    .link-card:hover{transform:translateY(-6px) rotateX(6deg) rotateY(-6deg);box-shadow:0 18px 60px rgba(138,180,255,.22)}
+    .thumb{width:72px;height:54px;border-radius:8px;object-fit:cover;flex-shrink:0;box-shadow:0 4px 16px rgba(0,0,0,.25)}
+    .meta{font-size:13px}
+    .meta .title{font-weight:800}
+    .meta .desc{color:var(--muted);font-size:12px}
+    footer{position:fixed;left:16px;bottom:16px;right:16px;padding:12px;border-radius:12px;display:flex;justify-content:space-between;align-items:center;backdrop-filter:blur(6px);background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.012));border:1px solid rgba(255,255,255,.05)}
+    .impossible{position:absolute;right:40px;bottom:40px;width:220px;height:220px;z-index:40;pointer-events:auto}
+    .impossible svg{width:100%;height:100%}
+    @media (max-width:1100px){main{grid-template-columns:1fr;padding:100px 20px} .links{position:relative;top:auto;margin-top:18px} h1{font-size:44px}}
+  </style>
 </head>
-<body>
-  <div id="message"></div>
-    <div id="container"></div>
-    <script>
-        const container = document.getElementById('container');
-      const message = document.getElementById('message');
-        const numParticles = 400;
-       let particles = [];
-        let t = 0;
-           let mouseX = 0;
-       let mouseY = 0;
+<body class="noise" aria-label="Vamba 3D site">
+  <header role="banner">
+    <div class="brand">
+      <div class="logo" aria-hidden="true">V</div>
+      <div>
+        <div style="font-weight:800">Vamba</div>
+        <div style="font-size:12px;color:var(--muted)">3D — Только бесплатные технологии</div>
+      </div>
+    </div>
+    <nav aria-label="Главное меню">
+      <a class="btn" href="#links" aria-label="Полезные ссылки">Полезные</a>
+      <a class="btn" href="#repo" aria-label="Посмотреть на GitHub">View on GitHub</a>
+    </nav>
+  </header>
 
-     function createParticle(x, y, z) {
-            const particle = document.createElement('div');
-             particle.classList.add('particle');
-            particle.style.left = ${x}px;
-           particle.style.top = ${y}px;
-             particle.z = z;
-            particle.angle = Math.random() * Math.PI * 2;
-           particle.speed = Math.random() * 0.8 + 0.3 ;
-            particle.hue = Math.random() * 360;
-           particle.vx = (Math.random() - 0.5) * 0.1;
-           particle.vy = (Math.random() - 0.5) * 0.1;
-            particle.lifespan = Math.random() * 600 + 400;
-             particle.birthTime = t;
-              particle.chaos = Math.random() * 2 + 0.5;
-              particle.reflection = Math.random() * 2 + 1
-            container.appendChild(particle);
-           particles.push(particle);
+  <main>
+    <section class="hero" aria-labelledby="main-title">
+      <canvas id="scene" aria-label="3D-сцена"></canvas>
+      <div class="overlay" aria-hidden="true">
+        <div class="title" id="main-title">
+          <h1>Vamba — 3D Luxe: невозможное, стекло и блеск уровня брендов</h1>
+          <p class="lead">Русская версия. Ультра гладкие материалы, иридесценция, блум, кино-зерно и «невозможная» геометрия. Всё в одном файле и бесплатно.</p>
+        </div>
+        <div class="impossible" title="Невозможный объект (визуальная иллюзия)">
+          <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Невозможный треугольник">
+            <defs>
+              <linearGradient id="g" x1="0" x2="1">
+                <stop offset="0" stop-color="#8ab4ff" />
+                <stop offset="1" stop-color="#b388ff" />
+              </linearGradient>
+            </defs>
+            <path d="M30 30 L170 30 L100 170 Z" fill="none" stroke="url(#g)" stroke-width="14" stroke-linejoin="round" stroke-linecap="round" />
+            <path d="M60 60 L140 60 L100 140 Z" fill="none" stroke="#071020" stroke-width="14" stroke-linejoin="round" stroke-linecap="round" opacity="0.12" />
+          </svg>
+        </div>
+      </div>
+    </section>
+
+    <aside class="links" id="links" aria-label="Список полезных ссылок">
+      <h3>Полезные ресурсы — всё бесплатно</h3>
+      <a class="link-card" href="https://threejs.org/" target="_blank" rel="noopener" aria-label="Three.js — Документация">
+        <img class="thumb" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0MDAgMzAwIiBmaWxsPSJub25lIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgZmlsbD0iIzA3MDkwYyIvPjx0ZXh0IHg9IjUwIiB5PSIxNTAiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIyNCIgZmlsbD0iI2U3ZWJmMiI+VGhyZWUuanM8L3RleHQ+PC9zdmc+" alt="Three.js" />
+        <div class="meta"><div class="title">Three.js — WebGL для людей</div><div class="desc">Официальная документация и примеры.</div></div>
+      </a>
+      <a class="link-card" href="https://greensock.com/" target="_blank" rel="noopener" aria-label="GSAP — Анимации">
+        <img class="thumb" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0MDAgMzAwIiBmaWxsPSJub25lIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgZmlsbD0iIzA3MDkwYyIvPjx0ZXh0IHg9IjUwIiB5PSIxNTAiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIyNCIgZmlsbD0iI2U3ZWJmMiI+R1NBUDwvdGV4dD48L3N2Zz4=" alt="GSAP" />
+        <div class="meta"><div class="title">GSAP — плавные анимации</div><div class="desc">Профессиональные таймлайны и спринги (осн. часть бесплатна).</div></div>
+      </a>
+      <a class="link-card" href="https://developer.mozilla.org/ru/" target="_blank" rel="noopener" aria-label="MDN Web Docs">
+        <img class="thumb" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0MDAgMzAwIiBmaWxsPSJub25lIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgZmlsbD0iIzA3MDkwYyIvPjx0ZXh0IHg9IjUwIiB5PSIxNTAiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIyNCIgZmlsbD0iI2U3ZWJmMiI+TUROPC90ZXh0Pjwvc3ZnPg==" alt="MDN" />
+        <div class="meta"><div class="title">MDN — справочник по веб-технологиям</div><div class="desc">HTML, CSS, JS и WebGL.</div></div>
+      </a>
+      <a class="link-card" href="https://webglfundamentals.org/" target="_blank" rel="noopener" aria-label="WebGL Fundamentals">
+        <img class="thumb" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0MDAgMzAwIiBmaWxsPSJub25lIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgZmlsbD0iIzA3MDkwYyIvPjx0ZXh0IHg9IjUwIiB5PSIxNTAiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIyNCIgZmlsbD0iI2U3ZWJmMiI+V2ViR0wgRnVuZGFtZW50YWxzPC90ZXh0Pjwvc3ZnPg==" alt="WebGL Fundamentals" />
+        <div class="meta"><div class="title">WebGL Fundamentals</div><div class="desc">Низкоуровневые основы 3D на вебе.</div></div>
+      </a>
+      <a class="link-card" href="https://unsplash.com/" target="_blank" rel="noopener" aria-label="Unsplash — бесплатные картинки">
+        <img class="thumb" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0MDAgMzAwIiBmaWxsPSJub25lIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgZmlsbD0iIzA3MDkwYyIvPjx0ZXh0IHg9IjUwIiB5PSIxNTAiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIyNCIgZmlsbD0iI2U3ZWJmMiI+VW5zcGxhc2g8L3RleHQ+PC9zdmc+" alt="Unsplash" />
+        <div class="meta"><div class="title">Unsplash — бесплатные изображения</div><div class="desc">Фото для превью и карточек.</div></div>
+      </a>
+      <a class="link-card" href="https://fonts.google.com/" target="_blank" rel="noopener" aria-label="Google Fonts">
+        <img class="thumb" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0MDAgMzAwIiBmaWxsPSJub25lIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgZmlsbD0iIzA3MDkwYyIvPjx0ZXh0IHg9IjUwIiB5PSIxNTAiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIyNCIgZmlsbD0iI2U3ZWJmMiI+R29vZ2xlIEZvbnRzPC90ZXh0Pjwvc3ZnPg==" alt="Google Fonts" />
+        <div class="meta"><div class="title">Google Fonts</div><div class="desc">Бесплатные шрифты: Inter и др.</div></div>
+      </a>
+      <a class="link-card" href="https://github.com/" target="_blank" rel="noopener" aria-label="GitHub">
+        <img class="thumb" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0MDAgMzAwIiBmaWxsPSJub25lIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgZmlsbD0iIzA3MDkwYyIvPjx0ZXh0IHg9IjUwIiB5PSIxNTAiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIyNCIgZmlsbD0iI2U3ZWJmMiI+R2l0SHViPC90ZXh0Pjwvc3ZnPg==" alt="GitHub" />
+        <div class="meta"><div class="title">GitHub — разместите сайт</div><div class="desc">Публикация через GitHub Pages: один файл — и онлайн.</div></div>
+      </a>
+      <a class="link-card" href="https://css-tricks.com/" target="_blank" rel="noopener" aria-label="CSS-Tricks">
+        <img class="thumb" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0MDAgMzAwIiBmaWxsPSJub25lIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgZmlsbD0iIzA3MDkwYyIvPjx0ZXh0IHg9IjUwIiB5PSIxNTAiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIyNCIgZmlsbD0iI2U3ZWJmMiI+Q1NTLVRyaWNrczwvdGV4dD48L3N2Zz4=" alt="CSS-Tricks" />
+        <div class="meta"><div class="title">CSS-Tricks</div><div class="desc">Фишки, эффекты и гайды по CSS.</div></div>
+      </a>
+    </aside>
+  </main>
+
+  <footer>
+    <div>© Vamba — Бесплатный 3D-шаблон. <a id="repo" href="#repo" style="margin-left:8px;color:var(--accent)">Ссылка на репозиторий</a></div>
+    <div style="font-size:13px;color:var(--muted)">Готово к деплою на GitHub Pages</div>
+  </footer>
+
+  <script>
+    // ------------------------
+    // 3D сцена «люкс»: стекло, иридесценция, блум, кино-зерно, частицы
+    // ------------------------
+    const canvas = document.getElementById('scene');
+    const renderer = new THREE.WebGLRenderer({canvas, antialias:true, alpha:true});
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setSize(canvas.clientWidth || 800, canvas.clientHeight || 600, false);
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.25;
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 1000);
+    camera.position.set(0,0,8);
+
+    // Свет и настроение
+    const hemi = new THREE.HemisphereLight(0xffffff, 0x0a0f18, 0.65); scene.add(hemi);
+    const dir = new THREE.DirectionalLight(0xffffff, 1.0); dir.position.set(5,10,7); scene.add(dir);
+
+    // Материал с «дорогим» переливом для Пенроуза
+    const mat = new THREE.MeshPhysicalMaterial({
+      color:0xffffff, metalness:0.92, roughness:0.08,
+      reflectivity:1, clearcoat:1, clearcoatRoughness:0.05,
+      iridescence:1, iridescenceIOR:1.3, sheen:1
+    });
+
+    // Классический невозможный треугольник Пенроуза (3 «балки»)
+    const penrose = new THREE.Group();
+    const barLen = 3.2, barThick = 0.5;
+    const barGeo = new THREE.BoxGeometry(barLen, barThick, barThick);
+
+    const b1 = new THREE.Mesh(barGeo, mat);
+    b1.rotation.z = Math.PI/2; b1.position.set(0, barLen/2 - barThick/2, 0);
+
+    const b2 = new THREE.Mesh(barGeo, mat);
+    b2.rotation.z = Math.PI; b2.rotation.y = -Math.PI/3; b2.position.set(-barLen/4, -Math.sqrt(3)*barLen/4, 0);
+
+    const b3 = new THREE.Mesh(barGeo, mat);
+    b3.rotation.y = Math.PI/3; b3.position.set(barLen/4, -Math.sqrt(3)*barLen/4, 0);
+
+    // Фаски-иллюзии: тонкие «накладки», чтобы сходилось «невозможно»
+    const capGeo = new THREE.CylinderGeometry(barThick*0.52, barThick*0.52, barThick*0.4, 24);
+    const c1 = new THREE.Mesh(capGeo, mat); c1.rotation.x = Math.PI/2; c1.position.copy(b1.position);
+    const c2 = new THREE.Mesh(capGeo, mat); c2.rotation.x = Math.PI/2; c2.position.copy(b2.position);
+    const c3 = new THREE.Mesh(capGeo, mat); c3.rotation.x = Math.PI/2; c3.position.copy(b3.position);
+
+    penrose.add(b1,b2,b3,c1,c2,c3);
+    penrose.scale.set(1.15,1.15,1.15);
+    scene.add(penrose);
+
+    // Стеклянная «сфера-бриллиант» вокруг
+    const glassMat = new THREE.MeshPhysicalMaterial({
+      transmission:1, thickness:0.9, roughness:0.02, metalness:0,
+      ior:1.45, attenuationColor:new THREE.Color(0x8ab4ff), attenuationDistance:4,
+      reflectivity:1, clearcoat:1
+    });
+    const glass = new THREE.Mesh(new THREE.IcosahedronGeometry(2.4,3), glassMat); scene.add(glass);
+
+    // Динамическое отражение для стекла
+    const cubeRT = new THREE.WebGLCubeRenderTarget(256, { type: THREE.HalfFloatType, generateMipmaps:true });
+    const cubeCam = new THREE.CubeCamera(0.1, 50, cubeRT);
+    glassMat.envMap = cubeRT.texture;
+
+    // Частицы — «звёздная пыль»
+    const particlesCount = 1800;
+    const positions = new Float32Array(particlesCount*3);
+    for(let i=0;i<particlesCount;i++){
+      const r = 9 + Math.random()*10; const th = Math.random()*Math.PI*2;
+      positions[i*3] = Math.cos(th)*r*(0.6+Math.random()*0.8);
+      positions[i*3+1] = (Math.random()-0.5)*10;
+      positions[i*3+2] = Math.sin(th)*r*(0.6+Math.random()*0.8);
+    }
+    const pgeo = new THREE.BufferGeometry(); pgeo.setAttribute('position', new THREE.BufferAttribute(positions,3));
+    const pmaterial = new THREE.PointsMaterial({size:0.028, transparent:true, opacity:0.85});
+    const points = new THREE.Points(pgeo, pmaterial); scene.add(points);
+
+    // Постобработка: RenderPass + Bloom + Film (лёгкое кино-зерно)
+    const composer = new THREE.EffectComposer(renderer);
+    const renderPass = new THREE.RenderPass(scene, camera); composer.addPass(renderPass);
+    const bloom = new THREE.UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.95, 0.6, 0.85); composer.addPass(bloom);
+    const film = new THREE.FilmPass(0.2, 0.025, 648, false); composer.addPass(film);
+
+    // --- GOD RAYS (экрано-пространственные лучи) ---
+    const GodRaysShader = {
+      uniforms: {
+        tDiffuse: { value: null },
+        lightPosition: { value: new THREE.Vector2(0.5, 0.5) },
+        exposure: { value: 0.85 },
+        decay: { value: 0.95 },
+        density: { value: 0.9 },
+        weight: { value: 0.9 },
+        samples: { value: 80 }
+      },
+      vertexShader: `
+        varying vec2 vUv;
+        void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }
+      `,
+      fragmentShader: `
+        varying vec2 vUv;
+        uniform sampler2D tDiffuse;
+        uniform vec2 lightPosition;
+        uniform float exposure; uniform float decay; uniform float density; uniform float weight; uniform int samples;
+        void main(){
+          vec2 texCoord = vUv;
+          vec2 deltaTextCoord = (texCoord - lightPosition);
+          deltaTextCoord *= 1.0 / float(samples) * density;
+          vec3 color = texture2D(tDiffuse, texCoord).rgb;
+          vec3 illuminationDecay = vec3(1.0);
+          for(int i=0;i<200;i++){
+            if(i==samples) break;
+            texCoord -= deltaTextCoord;
+            vec3 sample = texture2D(tDiffuse, texCoord).rgb;
+            sample *= illuminationDecay * weight;
+            color += sample;
+            illuminationDecay *= decay;
+          }
+          color *= exposure;
+          gl_FragColor = vec4(color, 1.0);
         }
-     function init() {
-            for (let i = 0; i < numParticles; i++) {
-               const angle = Math.random() * Math.PI * 2;
-                 const dist = Math.random() * 200 + 50;
-                const x = window.innerWidth / 2 + Math.cos(angle) * dist;
-               const y = window.innerHeight / 2 + Math.sin(angle) * dist;
-                  const z = Math.random() * 3;
-               createParticle(x, y, z);
-            }
-        }
-       function update() {
-            t += 0.05;
-             particles.forEach((particle, index) => {
-                const dist = 150 + Math.sin(t + index * 0.1) * 50;
-                const angle = Math.sin(t + index * 0.2 + particle.z) + index * 0.05 + t * 0.1;
+      `
+    };
+    const godRaysPass = new THREE.ShaderPass(GodRaysShader);
+    composer.addPass(godRaysPass);
 
-                const x = window.innerWidth/2 + Math.cos(angle) * dist;
-                const y = window.innerHeight/2 + Math.sin(angle) * dist;
+    // Виртуальная позиция «солнца» (совмещаем с направленным источником света)
+    const penroseLightPos = new THREE.Vector3(5,10,7);
 
-             let dx = 0;
-               let dy = 0;
-           particles.forEach(otherParticle => {
-                    if (otherParticle !== particle) {
-                       const distX = otherParticle.offsetLeft - particle.offsetLeft;
-                        const distY = otherParticle.offsetTop - particle.offsetTop;
-                        const dist = Math.sqrt(distX * distX + distY * distY);
-                      if (dist < 70) {
-                           dx += distX / dist * 0.01 * particle.reflection * (Math.random() - 0.5);
-dy += distY / dist * 0.01 * particle.reflection * (Math.random() - 0.5);
-                        }
-                    }
-                });
-              particle.vx += dx + (Math.random() - 0.5) * 0.01 * particle.chaos;
-             particle.vy += dy + (Math.random() - 0.5) * 0.01 * particle.chaos;
+    // Параллакс
+    const cursor = {x:0,y:0};
+    window.addEventListener('mousemove', (e)=>{ cursor.x = (e.clientX / window.innerWidth)*2-1; cursor.y = -(e.clientY / window.innerHeight)*2+1; });
 
-                 const newX = x + particle.vx * (Math.sin(t + index * 0.1) * 5);
-               const newY = y + particle.vy * (Math.cos(t + index * 0.2) * 5);
-            const hue = (particle.hue + (x + y) / 100) % 360;
-                 const lightness = 50 + Math.sin(t + index * 0.2) * 25;
+    // Влёт анимации - ИСПРАВЛЕНА ОШИБКА: заменен core на penrose
+    gsap.from([penrose.scale, glass.scale], {x:0.1,y:0.1,z:0.1, duration:1.6, ease:'elastic.out(1,0.6)', stagger:0.08});
 
-              particle.style.transform = translate(${newX - parseFloat(particle.style.left)}px, ${newY - parseFloat(particle.style.top)}px) rotate(${t * 5 + angle}deg);
-               particle.style.background = radial-gradient(circle, hsl(${hue}, 100%, ${lightness}%), transparent);
-                particle.hue += 0.5;
-             if (Math.random() < 0.008) {
-                   particle.remove();
-                    particles.splice(index, 1);
-                    const angle = Math.random() * Math.PI * 2;
-                    const dist = Math.random() * 200 + 50;
-                   const x = window.innerWidth / 2 + Math.cos(angle) * dist;
-                    const y = window.innerHeight / 2 + Math.sin(angle) * dist;
-                     const z = Math.random() * 3;
-                    createParticle(x, y, z);
-              }
-                 if (t - particle.birthTime > particle.lifespan ) {
-                     particle.remove();
-                   particles.splice(index, 1);
-                    const angle = Math.random() * Math.PI * 2;
-                    const dist = Math.random() * 200 + 50;
-                    const x = window.innerWidth / 2 + Math.cos(angle) * dist;
-                    const y = window.innerHeight / 2 + Math.sin(angle) * dist;
-                     const z = Math.random() * 3;
-                   createParticle(x, y, z);
-               }
+    // Ресайз
+    function onResize(){
+      const w = canvas.clientWidth || window.innerWidth; const h = canvas.clientHeight || window.innerHeight;
+      renderer.setSize(w,h,false); camera.aspect = w/h; camera.updateProjectionMatrix(); composer.setSize(w,h);
+    }
+    window.addEventListener('resize', onResize); onResize();
 
-            });
-             requestAnimationFrame(update);
+    // Рендер-цикл
+    let t=0; function animate(){
+      t+=0.01;
+      // Плавная ротация невозможного треугольника
+      penrose.rotation.y += 0.005 + cursor.x*0.002; 
+      penrose.rotation.x += 0.003 + cursor.y*0.0015;
+      
+      glass.rotation.y -= 0.002; glass.rotation.x += 0.0015; points.rotation.y += 0.0007;
+      // Обновление отражений
+      glass.visible=false; cubeCam.update(renderer, scene); glass.visible=true;
+      // Обновление положения источника света для God Rays
+      const lightNDC = penroseLightPos.clone().project(camera);
+      godRaysPass.uniforms.lightPosition.value.set( (lightNDC.x+1)/2, (lightNDC.y+1)/2 );
+      composer.render(); requestAnimationFrame(animate);
+    } animate();
 
-            message.textContent = "...";
-             if (mouseX !== 0 || mouseY !== 0){
-                  message.textContent = ...;
-            }
-
-
-             if (t % 5 > 4.99 ){
-               message.textContent = "Исследуй"
-           }
-            if(t % 10 > 9.99){
-              message.textContent = "Твори"
-             }
-               if(t % 15 > 14.99){
-                message.textContent = "Возможно Всё"
-           }
-
-        }
-        init();
-       update();
-          window.addEventListener('mousemove', (event) => {
-            mouseX = event.clientX;
-            mouseY = event.clientY;
-        });
-    </script>
+    // Плавный скролл и 3D-наклон карточек ссылок
+    document.querySelectorAll('a[href^="#"]').forEach(a=>{a.addEventListener('click',(ev)=>{ev.preventDefault(); const id=a.getAttribute('href').slice(1); const el=document.getElementById(id); if(el) el.scrollIntoView({behavior:'smooth',block:'center'});});});
+    const cards = document.querySelectorAll('.link-card');
+    cards.forEach(card=>{
+      card.addEventListener('mousemove', (e)=>{ const r=card.getBoundingClientRect(); const cx=e.clientX-r.left, cy=e.clientY-r.top; const rx=((cy/r.height)-0.5)*-12; const ry=((cx/r.width)-0.5)*12; card.style.transform=`translateY(-6px) rotateX(${rx}deg) rotateY(${ry}deg)`; });
+      card.addEventListener('mouseleave', ()=>{ card.style.transform=''; });
+    });
+  </script>
 </body>
 </html>
