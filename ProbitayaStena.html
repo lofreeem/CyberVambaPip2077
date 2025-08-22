@@ -1,307 +1,753 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Динамичная Вселенная</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Интерактивная Космическая Туманность 3D</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
-        
-        body, html {
-            margin: 0;
-            padding: 0;
-            height: 100%;
-            overflow: hidden;
-            font-family: 'Inter', sans-serif;
-            background-color: #000;
+        :root {
+            --gravity-color: rgba(255, 180, 255, 1);
+            --repulse-color: rgba(255, 160, 80, 1);
+            --vortex-color: rgba(130, 200, 255, 1);
+            --genesis-color: rgba(255, 255, 220, 1);
         }
-        
-        #backgroundScene {
-            position: fixed;
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: #000;
+            cursor: none;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #fff;
+        }
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        #webgl-canvas {
+            z-index: 1;
+        }
+        #ui-canvas {
+            z-index: 5;
+            pointer-events: none; /* UI canvas only for drawing */
+        }
+        #ui-layer {
+            position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            z-index: 0;
+            pointer-events: none;
+            z-index: 10;
         }
-
-        .content-section {
-            display: none;
+        #message {
+            position: absolute;
+            top: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 1.2rem;
+            opacity: 0;
+            user-select: none;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+            transition: opacity 0.7s ease;
+            text-align: center;
         }
-
-        .content-section.active {
-            display: block;
+        #genesis-input {
+             position: absolute;
+             bottom: 10%;
+             left: 50%;
+             transform: translateX(-50%);
+             font-size: 2rem;
+             text-align: center;
+             letter-spacing: 2px;
+             text-shadow: 0 0 12px var(--genesis-color);
+             max-width: 90%;
+             opacity: 0;
+             transition: opacity 0.5s;
         }
-
-        @keyframes fade-in-down {
-            from {
-                opacity: 0;
-                transform: translateY(-20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+        #genesis-input.visible {
+            opacity: 1;
         }
-
-        @keyframes fade-in-up {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+        #genesis-input span {
+            display: inline-block;
         }
-        
-        .animate-fade-in-down {
-            animation: fade-in-down 0.6s ease-out forwards;
+        #genesis-input .cursor {
+            border-left: 2px solid var(--genesis-color);
+            margin-left: 4px;
+            animation: blink 1s step-end infinite;
         }
-
-        .animate-fade-in-up {
-            animation: fade-in-up 0.6s ease-out forwards;
+        @keyframes blink {
+            from, to { border-color: transparent }
+            50% { border-color: var(--genesis-color); }
         }
     </style>
 </head>
-<body class="bg-black text-white">
-    <div id="backgroundScene"></div>
+<body>
+    <canvas id="webgl-canvas"></canvas>
+    <canvas id="ui-canvas"></canvas>
+    <div id="ui-layer">
+        <div id="message"></div>
+        <div id="genesis-input"><span class="cursor"></span></div>
+    </div>
 
-    <!-- Header -->
-    <header class="absolute top-0 left-0 w-full z-20 p-4 md:p-6">
-        <div class="container mx-auto flex justify-between items-center">
-            <div class="text-2xl font-bold tracking-wider">
-                <span class="text-cyan-400">Динамичная</span> Вселенная
-            </div>
+    <script id="vertex-shader" type="x-shader/x-vertex">
+        attribute vec3 a_position;
+        attribute float a_size;
+        attribute vec3 a_color;
 
-            <!-- Desktop Menu -->
-            <nav class="hidden md:block">
-                <ul class="flex items-center space-x-4">
-                    <li><a href="#" data-section="home" class="nav-link px-4 py-2 rounded-md text-lg font-medium transition-all duration-300">Главная</a></li>
-                    <li><a href="#" data-section="about" class="nav-link px-4 py-2 rounded-md text-lg font-medium transition-all duration-300">О проекте</a></li>
-                    <li><a href="#" data-section="contact" class="nav-link px-4 py-2 rounded-md text-lg font-medium transition-all duration-300">Контакты</a></li>
-                </ul>
-            </nav>
+        uniform mat4 u_projectionMatrix;
+        uniform mat4 u_modelViewMatrix;
 
-            <!-- Mobile Menu Button -->
-            <div class="md:hidden">
-                <button id="mobile-menu-button" class="text-white focus:outline-none" aria-label="Toggle menu">
-                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path id="menu-open-icon" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path>
-                        <path id="menu-close-icon" class="hidden" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                    </svg>
-                </button>
-            </div>
-        </div>
+        varying vec3 v_color;
 
-        <!-- Mobile Menu -->
-        <div id="mobile-menu" class="hidden md:hidden mt-4 bg-black bg-opacity-70 backdrop-blur-md rounded-lg p-2">
-            <nav>
-                <ul>
-                    <li><a href="#" data-section="home" class="nav-link block text-center px-4 py-2 rounded-md text-lg font-medium transition-all duration-300">Главная</a></li>
-                    <li><a href="#" data-section="about" class="nav-link block text-center px-4 py-2 rounded-md text-lg font-medium transition-all duration-300">О проекте</a></li>
-                    <li><a href="#" data-section="contact" class="nav-link block text-center px-4 py-2 rounded-md text-lg font-medium transition-all duration-300">Контакты</a></li>
-                </ul>
-            </nav>
-        </div>
-    </header>
+        void main() {
+            gl_Position = u_projectionMatrix * u_modelViewMatrix * vec4(a_position, 1.0);
+            // Perspective scaling for point size
+            gl_PointSize = a_size * (500.0 / gl_Position.w);
+            v_color = a_color;
+        }
+    </script>
+    <script id="fragment-shader" type="x-shader/x-fragment">
+        precision mediump float;
+        varying vec3 v_color;
 
-    <!-- Content -->
-    <main class="relative z-10 flex items-center justify-center h-full p-4 md:p-8">
-        <div class="max-w-4xl w-full bg-black bg-opacity-50 p-8 rounded-2xl shadow-2xl backdrop-blur-sm border border-gray-700">
-            <div id="home" class="content-section text-center">
-                <h2 class="text-4xl md:text-5xl font-bold mb-4 animate-fade-in-down">Добро пожаловать в Динамичную Вселенную!</h2>
-                <p class="text-lg md:text-xl text-gray-300 animate-fade-in-up">Здесь вы можете взаимодействовать с виртуальным миром, который меняется в зависимости от ваших действий.</p>
-            </div>
-            <div id="about" class="content-section text-center">
-                <h2 class="text-4xl md:text-5xl font-bold mb-4 animate-fade-in-down">О проекте</h2>
-                <p class="text-lg md:text-xl text-gray-300 animate-fade-in-up">Это интерактивный фон, созданный с использованием Three.js. Мы создали динамичную вселенную, которая реагирует на действия пользователя в реальном времени.</p>
-            </div>
-            <div id="contact" class="content-section text-center">
-                <h2 class="text-4xl md:text-5xl font-bold mb-4 animate-fade-in-down">Контакты</h2>
-                <p class="text-lg md:text-xl text-gray-300 animate-fade-in-up">
-                    Для связи с нами, пишите на <a href="mailto:xxxtrapxxx81@gmail.com" class="text-cyan-400 hover:underline">xxxtrapxxx81@gmail.com</a>.
-                </p>
-            </div>
-        </div>
-    </main>
+        // HSL to RGB conversion
+        vec3 hsl2rgb(vec3 c) {
+            vec3 rgb = clamp(abs(mod(c.x * 6.0 + vec3(0.0, 4.0, 2.0), 6.0) - 3.0) - 1.0, 0.0, 1.0);
+            return c.z + c.y * (rgb - 0.5) * (1.0 - abs(2.0 * c.z - 1.0));
+        }
+
+        void main() {
+            float dist = distance(gl_PointCoord, vec2(0.5));
+            // Create a soft, glowing particle effect
+            float strength = 1.0 - smoothstep(0.0, 0.5, dist);
+            gl_FragColor = vec4(hsl2rgb(v_color), strength);
+        }
+    </script>
 
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            // --- UI LOGIC ---
-            const mobileMenuButton = document.getElementById('mobile-menu-button');
-            const mobileMenu = document.getElementById('mobile-menu');
-            const menuOpenIcon = document.getElementById('menu-open-icon');
-            const menuCloseIcon = document.getElementById('menu-close-icon');
-            const navLinks = document.querySelectorAll('.nav-link');
-            const contentSections = document.querySelectorAll('.content-section');
-
-            const toggleMobileMenu = () => {
-                const isOpen = mobileMenu.classList.contains('hidden');
-                mobileMenu.classList.toggle('hidden', !isOpen);
-                menuOpenIcon.classList.toggle('hidden', isOpen);
-                menuCloseIcon.classList.toggle('hidden', !isOpen);
-            };
-
-            const showSection = (sectionId) => {
-                contentSections.forEach(section => {
-                    section.classList.remove('active');
-                });
-                const activeSection = document.getElementById(sectionId);
-                if (activeSection) {
-                    activeSection.classList.add('active');
-                }
-                
-                navLinks.forEach(link => {
-                    if (link.dataset.section === sectionId) {
-                        link.classList.add('bg-cyan-500', 'text-white', 'shadow-lg');
-                        link.classList.remove('text-gray-300', 'hover:bg-gray-700', 'hover:text-white');
-                    } else {
-                        link.classList.remove('bg-cyan-500', 'text-white', 'shadow-lg');
-                        link.classList.add('text-gray-300', 'hover:bg-gray-700', 'hover:text-white');
-                    }
-                });
-
-                if (!mobileMenu.classList.contains('hidden')) {
-                    toggleMobileMenu();
-                }
-            };
-            
-            mobileMenuButton.addEventListener('click', toggleMobileMenu);
-
-            navLinks.forEach(link => {
-                link.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    showSection(link.dataset.section);
-                });
-            });
-
-            // Show initial section
-            showSection('home');
-
-            // --- THREE.JS LOGIC ---
-            const mount = document.getElementById('backgroundScene');
-            if (!mount) return;
-
-            const objects = [];
-
-            // Scene, Camera, Renderer
-            const scene = new THREE.Scene();
-            const camera = new THREE.PerspectiveCamera(75, mount.clientWidth / mount.clientHeight, 0.1, 2000);
-            camera.position.z = 15;
-
-            const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-            renderer.setSize(mount.clientWidth, mount.clientHeight);
-            renderer.setPixelRatio(window.devicePixelRatio);
-            mount.appendChild(renderer.domElement);
-
-            // Lighting
-            const ambientLight = new THREE.AmbientLight(0x404040, 2);
-            scene.add(ambientLight);
-            const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5);
-            directionalLight.position.set(5, 5, 5).normalize();
-            scene.add(directionalLight);
-
-            // Stars
-            const starsGeometry = new THREE.BufferGeometry();
-            const starsCount = 10000;
-            const posArray = new Float32Array(starsCount * 3);
-            for (let i = 0; i < starsCount * 3; i++) {
-                posArray[i] = (Math.random() - 0.5) * 2000;
+        class Particle {
+            constructor() {
+                this.reset();
             }
-            starsGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
-            const starsMaterial = new THREE.PointsMaterial({
-                size: 0.2,
-                color: 0xaaaaaa,
-                blending: THREE.AdditiveBlending,
-            });
-            const starField = new THREE.Points(starsGeometry, starsMaterial);
-            scene.add(starField);
-            
-            // Interaction Handler
-            const createInteractiveObject = (event) => {
-                const isTouchEvent = event.touches && event.touches.length > 0;
-                const clientX = isTouchEvent ? event.touches[0].clientX : event.clientX;
-                const clientY = isTouchEvent ? event.touches[0].clientY : event.clientY;
 
-                const vector = new THREE.Vector3();
-                vector.x = (clientX / window.innerWidth) * 2 - 1;
-                vector.y = -(clientY / window.innerHeight) * 2 + 1;
-                vector.z = 0.5;
-                vector.unproject(camera);
-
-                const dir = vector.sub(camera.position).normalize();
-                const distance = -camera.position.z / dir.z;
-                const pos = camera.position.clone().add(dir.multiplyScalar(distance));
-
-                const geometry = new THREE.IcosahedronGeometry(Math.random() * 0.5 + 0.2, 1);
-                const material = new THREE.MeshStandardMaterial({
-                    color: new THREE.Color(Math.random(), Math.random(), Math.random()),
-                    metalness: 0.7,
-                    roughness: 0.2,
-                    emissive: new THREE.Color(0x111111),
-                });
-                const mesh = new THREE.Mesh(geometry, material);
-                mesh.position.copy(pos);
+            reset() {
+                const angle = Math.random() * Math.PI * 2;
+                const dist = Math.random() * 250 + 50;
+                const z = (Math.random() - 0.5) * App.WORLD_DEPTH;
                 
-                mesh.userData.velocity = new THREE.Vector3(
-                    (Math.random() - 0.5) * 0.1,
-                    (Math.random() - 0.5) * 0.1,
-                    (Math.random() - 0.5) * 0.1,
-                );
+                this.x = Math.cos(angle) * dist;
+                this.y = Math.sin(angle) * dist;
+                this.z = z;
 
-                scene.add(mesh);
-                objects.push(mesh);
+                this.vx = 0; this.vy = 0; this.vz = (Math.random() - 0.5) * 0.5;
+                
+                this.size = Math.random() * 2.5 + 1.0;
+                this.hue = Math.random(); // 0 to 1
+                this.saturation = 1.0;
+                this.lightness = 0.5;
+                
+                this.targetX = null; this.targetY = null; this.targetZ = null;
+            }
 
-                setTimeout(() => {
-                    scene.remove(mesh);
-                    mesh.geometry.dispose();
-                    mesh.material.dispose();
-                    const index = objects.indexOf(mesh);
-                    if (index > -1) {
-                        objects.splice(index, 1);
+            update() {
+                 if (this.targetX !== null) {
+                    let dx = this.targetX - this.x;
+                    let dy = this.targetY - this.y;
+                    let dz = this.targetZ - this.z;
+                    this.vx += dx * 0.01;
+                    this.vy += dy * 0.01;
+                    this.vz += dz * 0.01;
+                }
+
+                if (App.isInteracting) {
+                    const projectedCoords = App.project3D(this.x, this.y, this.z);
+                    const dx = App.mouseX - projectedCoords.x;
+                    const dy = App.mouseY - projectedCoords.y;
+                    const distSq = dx * dx + dy * dy;
+
+                    if (distSq < App.INTERACTION_RADIUS_SQ) {
+                        const forceFactor = Math.max(0, 1 - distSq / App.INTERACTION_RADIUS_SQ);
+                        
+                        switch (App.currentMode.key) {
+                            case 'gravity':
+                                this.vx += dx * forceFactor * 0.025;
+                                this.vy += dy * forceFactor * 0.025;
+                                break;
+                            case 'repulse':
+                                this.vx -= dx * forceFactor * 0.02;
+                                this.vy -= dy * forceFactor * 0.02;
+                                break;
+                            case 'vortex':
+                                this.vx += -dy * forceFactor * 0.02;
+                                this.vy += dx * forceFactor * 0.02;
+                                this.vx += dx * forceFactor * 0.003;
+                                this.vy += dy * forceFactor * 0.003;
+                                break;
+                        }
                     }
-                }, 5000);
-            };
+                }
 
-            // Animation loop
-            const animate = () => {
-                requestAnimationFrame(animate);
+                if (App.currentMode.key !== 'genesis' || App.genesisText === '') {
+                     this.targetX = null; this.targetY = null; this.targetZ = null;
+                     const orbitalAngle = Math.atan2(this.y, this.x) + 0.005;
+                     const orbitalDist = Math.sqrt(this.x * this.x + this.y * this.y);
+                     const targetX = Math.cos(orbitalAngle) * orbitalDist;
+                     const targetY = Math.sin(orbitalAngle) * orbitalDist;
+                     this.vx += (targetX - this.x) * 0.0001;
+                     this.vy += (targetY - this.y) * 0.0001;
+                }
 
-                objects.forEach(mesh => {
-                    mesh.position.add(mesh.userData.velocity);
-                    mesh.rotation.x += 0.01;
-                    mesh.rotation.y += 0.01;
-                });
+                this.x += this.vx; this.y += this.vy; this.z += this.vz;
+
+                // Bounce off world boundaries
+                const boundary = App.WORLD_WIDTH / 2;
+                if (Math.abs(this.x) > boundary || Math.abs(this.y) > boundary) {
+                    // Bring particle back towards center
+                    this.vx -= this.x * 0.001;
+                    this.vy -= this.y * 0.001;
+                }
+                if (Math.abs(this.z) > App.WORLD_DEPTH / 2) {
+                    this.vz *= -0.9;
+                    this.z = Math.sign(this.z) * App.WORLD_DEPTH / 2;
+                }
                 
-                starField.rotation.y += 0.0001;
+                this.vx *= 0.97; this.vy *= 0.97; this.vz *= 0.97;
+            }
+        }
 
-                renderer.render(scene, camera);
-            };
+        class AudioManager { // ... (same as before) ...
+            constructor() {
+                this.audioCtx = null;
+                this.drone = null;
+                this.gain = null;
+            }
 
-            const onWindowResize = () => {
-                camera.aspect = mount.clientWidth / mount.clientHeight;
-                camera.updateProjectionMatrix();
-                renderer.setSize(mount.clientWidth, mount.clientHeight);
-            };
-            window.addEventListener('resize', onWindowResize, false);
+            init() {
+                if (this.audioCtx) return;
+                try {
+                    this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                    this.gain = this.audioCtx.createGain();
+                    this.gain.gain.setValueAtTime(0.0, this.audioCtx.currentTime);
+                    this.gain.connect(this.audioCtx.destination);
+                    
+                    this.drone = this.audioCtx.createOscillator();
+                    this.drone.type = 'sine';
+                    this.drone.frequency.setValueAtTime(40, this.audioCtx.currentTime);
+                    
+                    const lfo = this.audioCtx.createOscillator();
+                    lfo.type = 'sine';
+                    lfo.frequency.setValueAtTime(0.1, this.audioCtx.currentTime);
+                    const lfoGain = this.audioCtx.createGain();
+                    lfoGain.gain.setValueAtTime(5, this.audioCtx.currentTime);
+                    lfo.connect(lfoGain).connect(this.drone.frequency);
+
+                    this.drone.connect(this.gain);
+                    this.drone.start();
+                    lfo.start();
+                    
+                    this.gain.gain.linearRampToValueAtTime(0.15, this.audioCtx.currentTime + 3);
+                } catch (e) {
+                    console.error("Web Audio API is not supported in this browser");
+                }
+            }
+
+            triggerSound(type, strength = 1) {
+                if (!this.audioCtx) return;
+                const now = this.audioCtx.currentTime;
+                const osc = this.audioCtx.createOscillator();
+                const gainNode = this.audioCtx.createGain();
+                osc.connect(gainNode).connect(this.gain);
+
+                switch (type) {
+                    case 'gravity':
+                        osc.type = 'sine';
+                        osc.frequency.setValueAtTime(100, now);
+                        osc.frequency.linearRampToValueAtTime(300 + strength * 200, now + 0.5);
+                        gainNode.gain.setValueAtTime(0.2 * strength, now);
+                        gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+                        break;
+                    case 'explosion':
+                        osc.type = 'sawtooth';
+                        osc.frequency.setValueAtTime(500, now);
+                        osc.frequency.exponentialRampToValueAtTime(50, now + 1.5);
+                        gainNode.gain.setValueAtTime(0.3, now);
+                        gainNode.gain.exponentialRampToValueAtTime(0.001, now + 1.5);
+                        break;
+                     case 'genesis-char':
+                        osc.type = 'triangle';
+                        gainNode.gain.setValueAtTime(0.2, now);
+                        gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
+                        osc.frequency.setValueAtTime(440 + Math.random() * 220, now);
+                        osc.frequency.exponentialRampToValueAtTime(880, now + 0.8);
+                        break;
+                }
+                osc.start(now); osc.stop(now + 2);
+            }
+        }
+
+        const App = {
+            // Elements
+            glCanvas: document.getElementById('webgl-canvas'),
+            uiCanvas: document.getElementById('ui-canvas'),
+            gl: null, uiCtx: null,
+            messageEl: document.getElementById('message'),
+            genesisInputEl: document.getElementById('genesis-input'),
             
-            let interactionTimeout;
-            const handleInteraction = (event) => {
-                if(interactionTimeout) return;
-                interactionTimeout = setTimeout(() => {
-                    createInteractiveObject(event);
-                    interactionTimeout = null;
-                }, 30); // Throttle to one object per 30ms
-            };
+            // State
+            particles: [],
+            NUM_PARTICLES: 0,
+            mouseX: 0, mouseY: 0,
+            isInteracting: false, isLensActive: false,
             
-            document.addEventListener('mousemove', handleInteraction);
-            document.addEventListener('touchmove', handleInteraction);
+            // 3D
+            WORLD_WIDTH: 800, WORLD_DEPTH: 800,
+            projectionMatrix: null, modelViewMatrix: null,
+            INTERACTION_RADIUS_SQ: 400 * 400,
 
-            animate();
-        });
+            // WebGL
+            shaderProgram: null,
+            particlePositionBuffer: null, particleColorBuffer: null, particleSizeBuffer: null,
+            positionArray: null, colorArray: null, sizeArray: null,
+            
+            MODES: [
+                { name: "Притяжение", key: "gravity", color: 'var(--gravity-color)', icon: 'M 4,12 L 12,4 M 4,4 L 12,12' },
+                { name: "Отталкивание", key: "repulse", color: 'var(--repulse-color)', icon: 'M 4,4 L 12,12 M 12,4 L 4,12' },
+                { name: "Вихрь", key: "vortex", color: 'var(--vortex-color)', icon: 'M 8,4 A 4,4 0 1,1 8,12 A 2,2 0 1,0 8,8' },
+                { name: "Генезис", key: "genesis", color: 'var(--genesis-color)', icon: 'M 4,10 L 8,4 L 12,10 M 6,8 L 10,8' }
+            ],
+            currentMode: null, messageTimeout: null,
+
+            genesisText: '', textPoints: [],
+            textCanvas: document.createElement('canvas'), textCtx: null,
+            audioManager: new AudioManager(),
+
+            init() {
+                this.uiCtx = this.uiCanvas.getContext('2d');
+                this.textCtx = this.textCanvas.getContext('2d');
+                this.currentMode = this.MODES[0];
+                
+                this.initWebGL();
+                if (!this.gl) return;
+
+                this.setupDimensions();
+                this.createParticles();
+                this.addEventListeners();
+                
+                this.showMessage("Нажмите и удерживайте для взаимодействия", 5000);
+                this.loop();
+            },
+
+            initWebGL() {
+                try {
+                    this.gl = this.glCanvas.getContext('webgl');
+                    if (!this.gl) throw new Error("WebGL not supported");
+
+                    const vertexShader = this.createShader(this.gl.VERTEX_SHADER, document.getElementById('vertex-shader').textContent);
+                    const fragmentShader = this.createShader(this.gl.FRAGMENT_SHADER, document.getElementById('fragment-shader').textContent);
+                    this.shaderProgram = this.createProgram(vertexShader, fragmentShader);
+
+                    this.gl.useProgram(this.shaderProgram);
+                    
+                    this.shaderProgram.a_position = this.gl.getAttribLocation(this.shaderProgram, 'a_position');
+                    this.shaderProgram.a_size = this.gl.getAttribLocation(this.shaderProgram, 'a_size');
+                    this.shaderProgram.a_color = this.gl.getAttribLocation(this.shaderProgram, 'a_color');
+                    this.shaderProgram.u_projectionMatrix = this.gl.getUniformLocation(this.shaderProgram, 'u_projectionMatrix');
+                    this.shaderProgram.u_modelViewMatrix = this.gl.getUniformLocation(this.shaderProgram, 'u_modelViewMatrix');
+
+                    this.particlePositionBuffer = this.gl.createBuffer();
+                    this.particleColorBuffer = this.gl.createBuffer();
+                    this.particleSizeBuffer = this.gl.createBuffer();
+
+                } catch (e) {
+                    console.error("Error initializing WebGL:", e);
+                    this.gl = null;
+                }
+            },
+            
+            createShader(type, source) {
+                const shader = this.gl.createShader(type);
+                this.gl.shaderSource(shader, source);
+                this.gl.compileShader(shader);
+                if (!this.gl.getShaderParameter(shader, this.gl.COMPILE_STATUS)) {
+                    console.error('An error occurred compiling the shaders: ' + this.gl.getShaderInfoLog(shader));
+                    this.gl.deleteShader(shader);
+                    return null;
+                }
+                return shader;
+            },
+
+            createProgram(vertexShader, fragmentShader) {
+                const program = this.gl.createProgram();
+                this.gl.attachShader(program, vertexShader);
+                this.gl.attachShader(program, fragmentShader);
+                this.gl.linkProgram(program);
+                if (!this.gl.getProgramParameter(program, this.gl.LINK_STATUS)) {
+                    console.error('Unable to initialize the shader program: ' + this.gl.getProgramInfoLog(program));
+                    return null;
+                }
+                return program;
+            },
+
+            setupDimensions() {
+                this.glCanvas.width = this.uiCanvas.width = window.innerWidth;
+                this.glCanvas.height = this.uiCanvas.height = window.innerHeight;
+                this.gl.viewport(0, 0, this.gl.canvas.width, this.gl.canvas.height);
+
+                const screenArea = this.glCanvas.width * this.glCanvas.height;
+                this.NUM_PARTICLES = Math.floor(screenArea / 3000);
+                this.NUM_PARTICLES = Math.max(200, Math.min(this.NUM_PARTICLES, 1500));
+                
+                // Matrices
+                const fov = 45 * Math.PI / 180;
+                const aspect = this.gl.canvas.clientWidth / this.gl.canvas.clientHeight;
+                const zNear = 0.1;
+                const zFar = 2000.0;
+                this.projectionMatrix = this.createPerspectiveMatrix(fov, aspect, zNear, zFar);
+                this.modelViewMatrix = this.createLookAtMatrix([0,0,800], [0,0,0], [0,1,0]);
+            },
+            
+            createParticles() {
+                this.particles = [];
+                for (let i = 0; i < this.NUM_PARTICLES; i++) {
+                    this.particles.push(new Particle());
+                }
+                this.positionArray = new Float32Array(this.NUM_PARTICLES * 3);
+                this.colorArray = new Float32Array(this.NUM_PARTICLES * 3);
+                this.sizeArray = new Float32Array(this.NUM_PARTICLES);
+            },
+            
+            updateParticles() {
+                for (let i = 0; i < this.NUM_PARTICLES; i++) {
+                    const p = this.particles[i];
+                    p.update();
+                    this.positionArray[i * 3] = p.x;
+                    this.positionArray[i * 3 + 1] = p.y;
+                    this.positionArray[i * 3 + 2] = p.z;
+                    
+                    this.colorArray[i * 3] = p.hue;
+                    this.colorArray[i * 3 + 1] = p.saturation;
+                    this.colorArray[i * 3 + 2] = p.lightness;
+                    
+                    this.sizeArray[i] = p.size;
+                }
+            },
+
+            drawScene() {
+                const gl = this.gl;
+                gl.clearColor(0.0, 0.0, 0.0, 1.0);
+                gl.clear(gl.COLOR_BUFFER_BIT);
+
+                // Additive blending for HDR-like glow effect
+                gl.enable(gl.BLEND);
+                gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
+                
+                // Positions
+                gl.bindBuffer(gl.ARRAY_BUFFER, this.particlePositionBuffer);
+                gl.bufferData(gl.ARRAY_BUFFER, this.positionArray, gl.DYNAMIC_DRAW);
+                gl.vertexAttribPointer(this.shaderProgram.a_position, 3, gl.FLOAT, false, 0, 0);
+                gl.enableVertexAttribArray(this.shaderProgram.a_position);
+
+                // Colors
+                gl.bindBuffer(gl.ARRAY_BUFFER, this.particleColorBuffer);
+                gl.bufferData(gl.ARRAY_BUFFER, this.colorArray, gl.DYNAMIC_DRAW);
+                gl.vertexAttribPointer(this.shaderProgram.a_color, 3, gl.FLOAT, false, 0, 0);
+                gl.enableVertexAttribArray(this.shaderProgram.a_color);
+
+                // Sizes
+                gl.bindBuffer(gl.ARRAY_BUFFER, this.particleSizeBuffer);
+                gl.bufferData(gl.ARRAY_BUFFER, this.sizeArray, gl.DYNAMIC_DRAW);
+                gl.vertexAttribPointer(this.shaderProgram.a_size, 1, gl.FLOAT, false, 0, 0);
+                gl.enableVertexAttribArray(this.shaderProgram.a_size);
+
+                gl.useProgram(this.shaderProgram);
+                gl.uniformMatrix4fv(this.shaderProgram.u_projectionMatrix, false, this.projectionMatrix);
+                gl.uniformMatrix4fv(this.shaderProgram.u_modelViewMatrix, false, this.modelViewMatrix);
+
+                gl.drawArrays(gl.POINTS, 0, this.NUM_PARTICLES);
+            },
+
+            loop() {
+                this.updateParticles();
+                this.drawScene();
+                
+                this.uiCtx.clearRect(0, 0, this.uiCanvas.width, this.uiCanvas.height);
+                if (this.isLensActive) {
+                    this.drawLens();
+                }
+
+                requestAnimationFrame(() => this.loop());
+            },
+
+            // Other methods (showMessage, interaction handlers, text generation)
+            // are mostly the same, but with small adaptations for 3D if needed
+            // ...
+            // (The code for handleInteractionStart, handleInteractionEnd, switchMode, 
+            // updateMousePos, updateTextPoints, assignParticlesToText, handleKeyDown,
+            // showMessage, drawLens, addEventListeners remains largely the same
+            // as the previous 2D version. Let's include them for completeness.)
+
+            showMessage(text, duration = 2000) {
+                this.messageEl.textContent = text;
+                this.messageEl.style.opacity = 1;
+                if (this.messageTimeout) clearTimeout(this.messageTimeout);
+                this.messageTimeout = setTimeout(() => { this.messageEl.style.opacity = 0; }, duration);
+            },
+            
+            handleInteractionStart(e) {
+                this.isInteracting = true;
+                this.updateMousePos(e);
+                this.audioManager.init();
+                this.interactionStartX = this.mouseX;
+                this.interactionStartY = this.mouseY;
+                setTimeout(() => {
+                    if (this.isInteracting) {
+                        this.isLensActive = true;
+                        if(this.currentMode.key === 'gravity') { this.audioManager.triggerSound('gravity', 0.5); }
+                    }
+                }, 150);
+            },
+            
+            handleInteractionEnd() {
+                if (!this.isInteracting) return;
+                
+                if (this.isLensActive) {
+                    const dx = this.mouseX - this.interactionStartX;
+                    const dy = this.mouseY - this.interactionStartY;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist > 40) {
+                        const angle = Math.atan2(dy, dx);
+                        const segment = 2 * Math.PI / this.MODES.length;
+                        let index;
+                        if (angle >= -Math.PI / 4 && angle < Math.PI / 4) index = 1; // Right
+                        else if (angle >= Math.PI / 4 && angle < 3 * Math.PI / 4) index = 2; // Bottom
+                        else if (angle >= -3 * Math.PI / 4 && angle < -Math.PI / 4) index = 0; // Top
+                        else index = 3; // Left
+                        this.switchMode(index);
+                    }
+                } else if (this.currentMode.key === 'gravity') {
+                     this.audioManager.triggerSound('explosion');
+                    this.particles.forEach(p => {
+                        const projected = this.project3D(p.x, p.y, p.z);
+                        const dx = projected.x - this.mouseX;
+                        const dy = projected.y - this.mouseY;
+                        const distSq = dx * dx + dy * dy;
+                        if (distSq < 200 * 200) {
+                            const dist = Math.sqrt(distSq) || 1;
+                            const force = Math.max(0, 15 - dist * 0.1);
+                            p.vx += (dx / dist) * force * 0.2;
+                            p.vy += (dy / dist) * force * 0.2;
+                        }
+                    });
+                }
+                this.isInteracting = false; this.isLensActive = false;
+            },
+
+            switchMode(index) {
+                index = index % this.MODES.length;
+                if (this.currentMode === this.MODES[index]) return;
+
+                this.currentMode = this.MODES[index];
+                this.showMessage(this.currentMode.name);
+                
+                if (this.currentMode.key === 'genesis') {
+                    this.genesisInputEl.classList.add('visible');
+                    this.updateTextPoints();
+                } else {
+                    this.genesisInputEl.classList.remove('visible');
+                    this.particles.forEach(p => { p.targetX = null; p.targetY = null; p.targetZ = null; });
+                }
+            },
+            
+            updateMousePos(e) {
+                const rect = this.glCanvas.getBoundingClientRect();
+                if (e.touches && e.touches.length > 0) {
+                    this.mouseX = e.touches[0].clientX - rect.left;
+                    this.mouseY = e.touches[0].clientY - rect.top;
+                } else {
+                    this.mouseX = e.clientX - rect.left;
+                    this.mouseY = e.clientY - rect.top;
+                }
+            },
+            
+            updateTextPoints() {
+                this.textCanvas.width = this.glCanvas.width;
+                this.textCanvas.height = 200;
+                this.textCtx.fillStyle = 'white';
+                this.textCtx.font = `bold 100px sans-serif`;
+                this.textCtx.textAlign = 'center';
+                this.textCtx.textBaseline = 'middle';
+                this.textCtx.fillText(this.genesisText, this.textCanvas.width / 2, 100);
+            
+                const data = this.textCtx.getImageData(0, 0, this.textCanvas.width, this.textCanvas.height).data;
+                this.textPoints = [];
+                const density = 4;
+                const textWidth = this.textCtx.measureText(this.genesisText).width;
+                const scale = Math.min(1, (this.WORLD_WIDTH * 0.9) / textWidth);
+
+                for (let y = 0; y < this.textCanvas.height; y += density) {
+                    for (let x = 0; x < this.textCanvas.width; x += density) {
+                        if (data[(x + y * this.textCanvas.width) * 4 + 3] > 128) {
+                            this.textPoints.push({ 
+                                x: (x - this.textCanvas.width / 2) * scale, 
+                                y: (y - 100) * scale,
+                                z: 0
+                            });
+                        }
+                    }
+                }
+                this.assignParticlesToText();
+            },
+
+            assignParticlesToText() {
+                this.particles.forEach(p => { p.targetX = null; p.targetY = null; p.targetZ = null; });
+                if (this.textPoints.length === 0) return;
+                const shuffledParticles = [...this.particles].sort(() => 0.5 - Math.random());
+                for (let i = 0; i < shuffledParticles.length; i++) {
+                    const p = shuffledParticles[i];
+                    const point = this.textPoints[i % this.textPoints.length];
+                    p.targetX = point.x; p.targetY = point.y; p.targetZ = point.z;
+                }
+            },
+
+            handleKeyDown(e) {
+                if (this.currentMode.key !== 'genesis' || e.key.length > 1 && e.key !== 'Backspace') return;
+                e.preventDefault();
+                if (e.key === 'Backspace') {
+                    this.genesisText = this.genesisText.slice(0, -1);
+                } else if (this.genesisText.length < 20 && e.key.match(/^[a-zA-Z0-9\s.,!?А-яЁё-]$/)) { // Allow more characters
+                    this.genesisText += e.key;
+                    this.audioManager.triggerSound('genesis-char');
+                }
+                this.genesisInputEl.innerHTML = `<span>${this.genesisText}</span><span class="cursor"></span>`;
+                this.updateTextPoints();
+            },
+
+            drawLens() {
+                const ctx = this.uiCtx;
+                const radius = 80; const iconRadius = radius - 25;
+                ctx.save();
+                ctx.translate(this.interactionStartX, this.interactionStartY);
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)'; ctx.lineWidth = 2;
+                ctx.beginPath(); ctx.arc(0, 0, radius, 0, Math.PI * 2); ctx.stroke();
+                const angles = [-Math.PI / 2, 0, Math.PI / 2, Math.PI]; // Top, Right, Bottom, Left
+                this.MODES.forEach((mode, i) => {
+                    const angle = angles[i];
+                    const x = Math.cos(angle) * iconRadius; const y = Math.sin(angle) * iconRadius;
+                    const dx = this.mouseX - this.interactionStartX;
+                    const dy = this.mouseY - this.interactionStartY;
+                    const selectionDist = Math.sqrt(Math.pow(x - dx, 2) + Math.pow(y - dy, 2));
+                    const highlight = Math.max(0, 1 - selectionDist / 100);
+                    ctx.strokeStyle = mode.color.replace('1)', `${0.5 + highlight * 0.5})`);
+                    ctx.fillStyle = mode.color.replace('1)', `${0.2 + highlight * 0.5})`);
+                    ctx.lineWidth = 2 + highlight * 2;
+                    ctx.beginPath(); ctx.arc(x, y, 15 + highlight * 5, 0, Math.PI * 2);
+                    ctx.fill(); ctx.stroke();
+                    ctx.save();
+                    ctx.translate(x - 8, y - 8);
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)'; ctx.lineWidth = 1.5;
+                    const path = new Path2D(mode.icon);
+                    ctx.stroke(path);
+                    ctx.restore();
+                });
+                ctx.restore();
+            },
+            
+            project3D(x, y, z) {
+                const m = this.projectionMatrix;
+                const mv = this.modelViewMatrix;
+
+                // Manual matrix multiplication for one point
+                const p = [x, y, z, 1];
+                const r = [0, 0, 0, 0];
+                for (let i = 0; i < 4; i++) {
+                   r[i] = mv[i] * p[0] + mv[i + 4] * p[1] + mv[i + 8] * p[2] + mv[i + 12] * p[3];
+                }
+
+                const r2 = [0,0,0,0];
+                 for (let i = 0; i < 4; i++) {
+                   r2[i] = m[i] * r[0] + m[i + 4] * r[1] + m[i + 8] * r[2] + m[i + 12] * r[3];
+                }
+                
+                // perspective divide
+                const w = r2[3];
+                if (w === 0) return {x: 0, y: 0};
+
+                const ndcX = r2[0] / w;
+                const ndcY = r2[1] / w;
+
+                // convert from NDC to screen coordinates
+                const screenX = (ndcX + 1) / 2 * this.glCanvas.width;
+                const screenY = (1 - ndcY) / 2 * this.glCanvas.height;
+
+                return { x: screenX, y: screenY };
+            },
+
+            // Matrix math utilities
+            createPerspectiveMatrix(fieldOfView, aspect, near, far) {
+                const f = 1.0 / Math.tan(fieldOfView / 2);
+                const rangeInv = 1 / (near - far);
+                return [
+                    f / aspect, 0, 0, 0,
+                    0, f, 0, 0,
+                    0, 0, (near + far) * rangeInv, -1,
+                    0, 0, near * far * rangeInv * 2, 0
+                ];
+            },
+            createLookAtMatrix(cameraPosition, target, up) {
+                const zAxis = [
+                    cameraPosition[0] - target[0],
+                    cameraPosition[1] - target[1],
+                    cameraPosition[2] - target[2],
+                ];
+                let zLen = Math.sqrt(zAxis[0] * zAxis[0] + zAxis[1] * zAxis[1] + zAxis[2] * zAxis[2]);
+                zAxis[0] /= zLen; zAxis[1] /= zLen; zAxis[2] /= zLen;
+
+                const xAxis = [
+                    up[1] * zAxis[2] - up[2] * zAxis[1],
+                    up[2] * zAxis[0] - up[0] * zAxis[2],
+                    up[0] * zAxis[1] - up[1] * zAxis[0]
+                ];
+                let xLen = Math.sqrt(xAxis[0] * xAxis[0] + xAxis[1] * xAxis[1] + xAxis[2] * xAxis[2]);
+                xAxis[0] /= xLen; xAxis[1] /= xLen; xAxis[2] /= xLen;
+                
+                const yAxis = [
+                    zAxis[1] * xAxis[2] - zAxis[2] * xAxis[1],
+                    zAxis[2] * xAxis[0] - zAxis[0] * xAxis[2],
+                    zAxis[0] * xAxis[1] - zAxis[1] * xAxis[0]
+                ];
+
+                return [
+                    xAxis[0], yAxis[0], zAxis[0], 0,
+                    xAxis[1], yAxis[1], zAxis[1], 0,
+                    xAxis[2], yAxis[2], zAxis[2], 0,
+                    -(xAxis[0] * cameraPosition[0] + xAxis[1] * cameraPosition[1] + xAxis[2] * cameraPosition[2]),
+                    -(yAxis[0] * cameraPosition[0] + yAxis[1] * cameraPosition[1] + yAxis[2] * cameraPosition[2]),
+                    -(zAxis[0] * cameraPosition[0] + zAxis[1] * cameraPosition[1] + zAxis[2] * cameraPosition[2]),
+                    1,
+                ];
+            },
+
+
+            addEventListeners() {
+                const interactionSurface = document.body;
+                window.addEventListener('resize', () => {
+                    this.setupDimensions();
+                    this.createParticles();
+                });
+                interactionSurface.addEventListener('mousedown', (e) => this.handleInteractionStart(e));
+                interactionSurface.addEventListener('mouseup', () => this.handleInteractionEnd());
+                interactionSurface.addEventListener('mousemove', (e) => { if (this.isInteracting) this.updateMousePos(e); });
+                interactionSurface.addEventListener('mouseleave', () => this.handleInteractionEnd());
+                interactionSurface.addEventListener('touchstart', (e) => {e.preventDefault(); this.handleInteractionStart(e);}, { passive: false });
+                interactionSurface.addEventListener('touchend', (e) => {e.preventDefault(); this.handleInteractionEnd();});
+                interactionSurface.addEventListener('touchcancel', (e) => {e.preventDefault(); this.handleInteractionEnd();});
+                interactionSurface.addEventListener('touchmove', (e) => { e.preventDefault(); if (this.isInteracting) this.updateMousePos(e);}, { passive: false });
+                window.addEventListener('keydown', (e) => this.handleKeyDown(e));
+            }
+        };
+
+        App.init();
     </script>
 </body>
 </html>
