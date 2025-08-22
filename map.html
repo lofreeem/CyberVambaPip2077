@@ -1,381 +1,1057 @@
 <!DOCTYPE html>
 <html lang="ru">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vambapunk Map System</title>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.16/dist/tailwind.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vambapunk Interface :: Anomaly Detected</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <!-- Post-processing scripts for Three.js -->
+    <script src="https://unpkg.com/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
+    <script src="https://unpkg.com/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
+    <script src="https://unpkg.com/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
+    <script src="https://unpkg.com/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
+    <script src="https://unpkg.com/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
+    <script src="https://unpkg.com/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
+
     <style>
-        body {
-            background: linear-gradient(135deg, #0a0a0a, #001f3f);
-            color: #00fff2;
-            font-family: 'Orbitron', sans-serif;
-            text-shadow: 0 0 5px #00fff2;
+        /*
+         * Vambapunk Interface v2.7 - 'Singularity' Build
+         *
+         * CORE STYLESHEET
+         * This file contains all styling information for the Vambapunk application.
+         * Modifications to this section require Level 3 Security Clearance.
+         * Unauthorized changes will be tracked and prosecuted.
+         *
+         * Timestamp: 2077.10.26 03:00 UTC
+         */
+        
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Roboto+Mono:wght@300;400;700&display=swap');
+        
+        :root {
+            --primary-color: #00fff2;
+            --secondary-color: #ff00ff;
+            --danger-color: #ff0055;
+            --background-color: #02040a;
+            --text-color: #e0e0e0;
+            --font-primary: 'Orbitron', sans-serif;
+            --font-secondary: 'Roboto Mono', monospace;
+        }
+
+        /* --- Base Setup --- */
+        body, html {
             margin: 0;
             padding: 0;
-            overflow-x: hidden;
-        }
-
-        .container {
-            padding: 20px;
-            margin: 0 auto;
-        }
-
-        .map-container {
+            height: 100%;
             width: 100%;
-            height: 400px;
-            border-radius: 12px;
-            border: 3px solid #00fff2;
-            box-shadow: 0 0 15px #00fff2;
+            overflow: hidden;
+            font-family: var(--font-primary);
+            background-color: var(--background-color);
+            color: var(--text-color);
+            text-shadow: 0 0 3px var(--primary-color);
+            cursor: none; /* Hide default cursor */
+        }
+
+        /* --- Glitch & Scanline Effects --- */
+        @keyframes glitch-anim {
+            0% { transform: translate(0); }
+            20% { transform: translate(-3px, 3px); }
+            40% { transform: translate(3px, -3px); }
+            60% { transform: translate(-3px, -3px); }
+            80% { transform: translate(3px, 3px); }
+            100% { transform: translate(0); }
+        }
+
+        .glitch-text::before, .glitch-text::after {
+            content: attr(data-text);
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--background-color);
+            overflow: hidden;
+            clip: rect(0, 900px, 0, 0);
+        }
+
+        .glitch-text::before {
+            left: 2px;
+            text-shadow: -1px 0 var(--secondary-color);
+            animation: glitch-anim 2s infinite linear alternate-reverse;
+        }
+
+        .glitch-text::after {
+            left: -2px;
+            text-shadow: -1px 0 var(--primary-color), 1px 1px var(--secondary-color);
+            animation: glitch-anim 3s infinite linear alternate-reverse;
+        }
+
+        @keyframes scanline {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(100%); }
+        }
+
+        .scanline-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 200%;
+            background: linear-gradient(0deg, rgba(0,0,0,0) 0%, rgba(2, 4, 10, 0.5) 50%, rgba(0,0,0,0) 100%);
+            background-size: 100% 4px;
+            animation: scanline 15s linear infinite;
+            pointer-events: none;
+            z-index: 9998;
+            opacity: 0.15;
+        }
+
+        /* --- Background & Core Layout --- */
+        #backgroundScene {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+
+        .content-section { display: none; }
+        .content-section.active { display: block; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px) scale(0.98); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .animate-fade-in { animation: fadeIn 0.7s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards; }
+        
+        .main-container {
+            width: 100%;
+            max-width: 1400px;
+            background: rgba(5, 10, 20, 0.75);
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: 0 0 40px rgba(0, 255, 242, 0.2);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 255, 242, 0.3);
             position: relative;
         }
 
-        .marker-popup {
-            color: #000;
-            font-weight: bold;
-            padding: 10px;
-            background: rgba(0, 255, 242, 0.95);
-            border-radius: 8px;
-            box-shadow: 0 0 10px #00fff2;
-            text-align: center;
-        }
-
+        /* --- Buttons & Interactive Elements --- */
         .btn {
-            background: linear-gradient(90deg, #00fff2, #00cccb);
+            background: linear-gradient(145deg, var(--primary-color), #00cccb);
             color: black;
-            padding: 12px 24px;
-            border-radius: 12px;
-            cursor: pointer;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: none;
             transition: all 0.3s ease-in-out;
             font-weight: bold;
             text-transform: uppercase;
             border: 2px solid black;
-            box-shadow: 0 0 15px #00fff2;
+            box-shadow: 0 0 10px var(--primary-color);
             margin: 4px;
+            text-shadow: none;
+            position: relative;
+            overflow: hidden;
         }
-
-        .btn:hover {
-            background: #00a3a1;
-            box-shadow: 0 0 20px #00fff2;
-            transform: scale(1.05);
-        }
-
-        .cursor-girl {
+        .btn::before {
+            content: '';
             position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transition: left 0.4s;
+        }
+        .btn:hover::before {
+            left: 100%;
+        }
+        .btn:hover {
+            box-shadow: 0 0 25px var(--primary-color), 0 0 10px white;
+            transform: scale(1.05) translateY(-2px);
+        }
+        .btn.danger { background: linear-gradient(145deg, var(--danger-color), #c40042); }
+        .btn.secondary { background: linear-gradient(145deg, var(--secondary-color), #c200c2); }
+        .btn:disabled {
+            background: #555;
+            cursor: not-allowed;
+            box-shadow: none;
+            transform: none;
+        }
+
+        /* --- Navigation --- */
+        .nav-link {
+            transition: all 0.3s ease;
+            text-shadow: 0 0 3px var(--primary-color);
+            position: relative;
+            padding-bottom: 5px;
+        }
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 2px;
+            background-color: var(--primary-color);
+            transition: width 0.3s ease;
+        }
+        .nav-link.active::after, .nav-link:hover::after {
+            width: 100%;
+        }
+        .nav-link.active, .nav-link:hover {
+            color: #fff;
+            text-shadow: 0 0 10px var(--primary-color), 0 0 15px var(--primary-color);
+        }
+
+        /* --- Map Styling --- */
+        .map-container {
+            width: 100%;
+            height: 60vh;
+            border-radius: 12px;
+            border: 2px solid var(--primary-color);
+            box-shadow: 0 0 25px rgba(0, 255, 242, 0.4);
+        }
+        .leaflet-container { background: #1a1a1a; border-radius: 10px; }
+        .leaflet-popup-content-wrapper, .leaflet-popup-tip {
+            background: rgba(0, 0, 0, 0.9);
+            color: var(--primary-color);
+            border: 1px solid var(--primary-color);
+            box-shadow: 0 0 15px var(--primary-color);
+            border-radius: 8px;
+        }
+        .leaflet-popup-content { font-family: var(--font-secondary); text-align: center; }
+        .leaflet-control-zoom-in, .leaflet-control-zoom-out { background-color: rgba(0,0,0,0.8) !important; color: var(--primary-color) !important; border-color: var(--primary-color) !important; }
+        .leaflet-bar a:hover { background-color: var(--primary-color) !important; color: #000 !important; }
+
+        /* --- Custom Cursor --- */
+        .cursor-follower {
+            position: fixed;
             pointer-events: none;
-            width: 50px;
-            height: 50px;
-            background-image: url('https://upload.wikimedia.org/wikipedia/commons/5/5b/Simple_blue_dots_%28svg%29.svg');
-            background-size: cover;
+            width: 40px;
+            height: 40px;
+            border: 2px solid var(--primary-color);
             border-radius: 50%;
-            animation: followCursor 0.2s ease-out, scaleUp 1.5s infinite alternate, shadowEffect 2s infinite ease-in-out;
+            transition: transform 0.1s ease-out, opacity 0.3s ease-out;
+            z-index: 9999;
+            box-shadow: 0 0 15px var(--primary-color), inset 0 0 10px var(--primary-color);
+            transform-origin: center center;
+            mix-blend-mode: exclusion;
         }
-
-        @keyframes followCursor {
-            0% {
-                transform: scale(1);
-            }
-
-            100% {
-                transform: scale(1.2);
-            }
-        }
-
-        @keyframes scaleUp {
-            0% {
-                transform: scale(1);
-                box-shadow: 0 0 20px rgba(0, 255, 242, 0.8);
-            }
-
-            50% {
-                transform: scale(1.5);
-                box-shadow: 0 0 40px rgba(0, 255, 242, 1);
-            }
-
-            100% {
-                transform: scale(1.2);
-                box-shadow: 0 0 20px rgba(0, 255, 242, 0.8);
-            }
-        }
-
-        @keyframes shadowEffect {
-            0% {
-                box-shadow: 0 0 20px rgba(0, 255, 242, 0.8);
-            }
-
-            100% {
-                box-shadow: 0 0 30px rgba(0, 255, 242, 1);
-            }
-        }
-
-        ::-webkit-scrollbar {
+        .cursor-dot {
+            position: fixed;
+            pointer-events: none;
             width: 8px;
+            height: 8px;
+            background-color: var(--primary-color);
+            border-radius: 50%;
+            z-index: 9999;
+            box-shadow: 0 0 5px var(--primary-color);
         }
 
-        ::-webkit-scrollbar-thumb {
-            background-color: #00fff2;
-            border-radius: 10px;
-            border: 3px solid #001f3f;
+        /* --- Scrollbar --- */
+        ::-webkit-scrollbar { width: 10px; }
+        ::-webkit-scrollbar-thumb { background-color: var(--primary-color); border-radius: 10px; border: 3px solid #000; box-shadow: 0 0 5px var(--primary-color); }
+        ::-webkit-scrollbar-track { background: #111; border-radius: 10px; }
+        .scroll-container { max-height: calc(100vh - 350px); overflow-y: auto; padding-right: 15px; }
+
+        /* --- Modals & Popups --- */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+            z-index: 1000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        .modal-overlay.active { opacity: 1; pointer-events: auto; }
+        .modal-content {
+            background: var(--background-color);
+            border: 1px solid var(--primary-color);
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: 0 0 30px var(--primary-color);
+            width: 90%;
+            max-width: 600px;
+            transform: scale(0.95);
+            transition: transform 0.3s ease;
+        }
+        .modal-overlay.active .modal-content { transform: scale(1); }
+
+        /* --- Item & Task Lists --- */
+        .list-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(0, 255, 242, 0.05);
+            padding: 1rem;
+            border-radius: 8px;
+            border-left: 4px solid var(--primary-color);
+            transition: background 0.3s, transform 0.3s;
+        }
+        .list-item:hover {
+            background: rgba(0, 255, 242, 0.1);
+            transform: translateX(5px);
         }
 
-        ::-webkit-scrollbar-track {
-            background: #333;
-            border-radius: 10px;
+        /* --- Utility & Animation Classes --- */
+        .text-cyan-400 { color: var(--primary-color); }
+        .animate-pulse-slow { animation: pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        @keyframes pulse {
+            50% { opacity: .7; }
         }
 
-        .scroll-container {
-            max-height: 60vh;
-            overflow-y: auto;
+        /* --- Holo Effect on Header --- */
+        #main-header {
+            background: linear-gradient(180deg, rgba(2, 4, 10, 0.8) 0%, rgba(2, 4, 10, 0) 100%);
+            backdrop-filter: blur(2px);
         }
 
-        @media (max-width: 768px) {
-            .map-container {
-                height: 300px;
-            }
-
-            .cursor-girl {
-                width: 40px;
-                height: 40px;
-            }
-
-            .btn {
-                padding: 10px 20px;
-                font-size: 14px;
-            }
-
-            .scroll-container {
-                max-height: 50vh;
-            }
+        /* --- Progress Bars --- */
+        .progress-bar {
+            width: 100%;
+            background-color: rgba(0, 255, 242, 0.1);
+            border-radius: 5px;
+            overflow: hidden;
+            border: 1px solid rgba(0, 255, 242, 0.3);
         }
-
-        @media (max-width: 480px) {
-            .container {
-                padding: 5px;
-            }
-
-            .btn {
-                padding: 6px 12px;
-                font-size: 12px;
-            }
-
-            .map-container {
-                height: 250px;
-            }
-
-            .cursor-girl {
-                width: 30px;
-                height: 30px;
-            }
-
-            .scroll-container {
-                max-height: 45vh;
-            }
+        .progress-bar-inner {
+            height: 10px;
+            background: linear-gradient(90deg, var(--secondary-color), var(--primary-color));
+            width: 0%;
+            border-radius: 5px;
+            transition: width 0.5s ease;
+            box-shadow: 0 0 8px var(--primary-color);
         }
     </style>
 </head>
+<body class="bg-black text-white">
+    <div id="backgroundScene"></div>
+    <div id="cursor-follower" class="cursor-follower hidden md:block"></div>
+    <div id="cursor-dot" class="cursor-dot hidden md:block"></div>
+    <div class="scanline-overlay"></div>
+    <div id="modal-container" class="modal-overlay"></div>
 
-<body>
-    <div class="container mx-auto p-6 text-center">
-        <h1 class="text-4xl font-bold mb-6 animate-pulse">Cyberpunk Map System</h1>
-
-        <div class="flex justify-center gap-4 mb-6">
-            <input type="text" id="userName" class="btn" placeholder="Введите имя" />
-            <button class="btn" onclick="saveName()">Сохранить имя</button>
+    <!-- Header -->
+    <header id="main-header" class="absolute top-0 left-0 w-full z-20 p-4">
+        <div class="container mx-auto flex justify-between items-center">
+            <div class="text-3xl font-bold tracking-wider uppercase glitch-text" data-text="Vambapunk">
+                Vamba<span class="text-cyan-400">punk</span>
+            </div>
+            <nav class="hidden md:flex items-center space-x-8">
+                <a href="#" data-section="map" class="nav-link text-lg">Карта</a>
+                <a href="#" data-section="quests" class="nav-link text-lg">Задания</a>
+                <a href="#" data-section="inventory" class="nav-link text-lg">Инвентарь</a>
+                <a href="#" data-section="factions" class="nav-link text-lg">Фракции</a>
+            </nav>
+            <div class="hidden md:flex items-center gap-2">
+                <input type="text" id="userName" class="bg-transparent border border-cyan-400 rounded-md px-3 py-1.5 text-cyan-400 placeholder-cyan-600 focus:outline-none focus:ring-2 focus:ring-cyan-400 font-secondary" placeholder="Имя оперативника" />
+                <button class="btn" onclick="window.game.saveName()">Сохранить</button>
+            </div>
+            <div class="md:hidden">
+                <button id="mobile-menu-button" class="focus:outline-none" aria-label="Toggle menu">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path id="menu-open-icon" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path><path id="menu-close-icon" class="hidden" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
         </div>
-
-        <div class="map-container mx-auto mt-6" id="mapContainer">
-            <div id="map" class="map-container"></div>
+        <!-- Mobile Menu -->
+        <div id="mobile-menu" class="hidden md:hidden mt-4 bg-black bg-opacity-90 backdrop-blur-lg rounded-lg p-4">
+            <nav class="flex flex-col items-center space-y-6">
+                <a href="#" data-section="map" class="nav-link text-lg">Карта</a>
+                <a href="#" data-section="quests" class="nav-link text-lg">Задания</a>
+                <a href="#" data-section="inventory" class="nav-link text-lg">Инвентарь</a>
+                <a href="#" data-section="factions" class="nav-link text-lg">Фракции</a>
+                 <div class="flex items-center gap-2 mt-4">
+                    <input type="text" id="userNameMobile" class="bg-transparent border border-cyan-400 rounded-md px-2 py-1 text-cyan-400 placeholder-cyan-600 focus:outline-none" placeholder="Введите имя" />
+                    <button class="btn" onclick="window.game.saveName(true)">Сохранить</button>
+                </div>
+            </nav>
         </div>
+    </header>
 
-        <div class="mt-6 flex justify-center gap-4">
-            <button class="btn" onclick="clearMarkers()">Очистить метки</button>
-            <button class="btn" onclick="locateUser()">Моё местоположение</button>
-            <button class="btn" onclick="plotRoute()">Построить маршрут</button>
+    <!-- Content -->
+    <main class="relative z-10 flex items-center justify-center h-full p-4">
+        <div class="main-container">
+            <!-- MAP SECTION -->
+            <div id="map-section" class="content-section">
+                <div id="map" class="map-container"></div>
+                <div class="mt-4 flex flex-wrap justify-center gap-2">
+                    <button class="btn danger" onclick="window.game.map.clearAllMarkers()">Очистить метки</button>
+                    <button class="btn" onclick="window.game.map.locateUser()">Моё местоположение</button>
+                    <button class="btn" onclick="window.game.map.plotRoute()">Построить маршрут</button>
+                    <button class="btn secondary" onclick="window.game.map.toggleWorldEvents()">Мировые события</button>
+                </div>
+            </div>
+            <!-- QUESTS SECTION -->
+            <div id="quests-section" class="content-section">
+                <h2 class="text-3xl font-bold text-center mb-4">Журнал Заданий</h2>
+                <div id="quests-list" class="space-y-3 mb-4 scroll-container pr-2"></div>
+                <div class="text-center"><button class="btn" onclick="window.game.quests.getNewQuest()">Запрос нового контракта</button></div>
+            </div>
+            <!-- INVENTORY SECTION -->
+            <div id="inventory-section" class="content-section">
+                <h2 class="text-3xl font-bold text-center mb-4">Инвентарь и Кибер-импланты</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <h3 class="text-xl mb-2 text-cyan-400">Инвентарь</h3>
+                        <div id="inventory-list" class="space-y-2 mb-4 scroll-container pr-2 max-h-60"></div>
+                        <button class="btn" onclick="window.game.inventory.addItem()">Добавить предмет</button>
+                    </div>
+                    <div>
+                        <h3 class="text-xl mb-2 text-cyan-400">Крафт</h3>
+                        <div id="crafting-list" class="space-y-2 mb-4 scroll-container pr-2 max-h-60"></div>
+                        <button class="btn secondary" onclick="window.game.crafting.showCraftingModal()">Открыть верстак</button>
+                    </div>
+                </div>
+            </div>
+            <!-- FACTIONS SECTION -->
+            <div id="factions-section" class="content-section">
+                <h2 class="text-3xl font-bold text-center mb-4">Репутация у Фракций</h2>
+                <div id="factions-list" class="space-y-4 mb-4 scroll-container pr-2"></div>
+            </div>
         </div>
+    </main>
+    
+    <!-- Audio Elements for UI Sounds -->
+    <audio id="audio-click" src="https://www.soundjay.com/buttons/sounds/button-21.mp3" preload="auto"></audio>
+    <audio id="audio-hover" src="https://www.soundjay.com/buttons/sounds/button-4.mp3" preload="auto"></audio>
+    <audio id="audio-modal" src="https://www.soundjay.com/misc/sounds/wind-chime-1.mp3" preload="auto"></audio>
 
-        <div class="mt-6 scroll-container">
-            <h2 class="text-2xl font-bold">Меню заданий</h2>
-            <div id="tasks"></div>
-            <button class="btn mt-4" onclick="addTask()">Добавить задание</button>
-        </div>
-
-        <div class="mt-6 scroll-container">
-            <h2 class="text-2xl font-bold">Инвентарь</h2>
-            <div id="inventory"></div>
-            <button class="btn mt-4" onclick="addItem()">Добавить предмет</button>
-        </div>
-
-        <div class="cursor-girl" id="cursorGirl"></div>
-    </div>
-
-    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
     <script>
-        const map = L.map('map').setView([51.505, -0.09], 13);
-        const tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; OpenStreetMap contributors'
-        }).addTo(map);
+        /*
+         * Vambapunk OS v3.1 - 'Nexus Core'
+         *
+         * BOOTSTRAP LOADER & MAIN LOGIC KERNEL
+         * Initializing core systems. Do not interrupt this process.
+         * Integrity Check: PASSED
+         *
+         * Loading Modules:
+         * - UI Manager
+         * - Audio Engine
+         * - Three.js Render Core
+         * - Leaflet Geo-System
+         * - Game Logic & State Manager
+         */
+        
+        document.addEventListener('DOMContentLoaded', () => {
 
-        const tasks = JSON.parse(localStorage.getItem("tasks")) || [];
-        const inventory = JSON.parse(localStorage.getItem("inventory")) || [];
-        let markers = JSON.parse(localStorage.getItem("markers")) || [];
-        let userPosition;
-        let route;
+            // --- CORE NAMESPACE ---
+            window.game = {};
 
-        // Сохранение имени пользователя
-        function saveName() {
-            const userName = document.getElementById('userName').value;
-            if (userName) {
-                localStorage.setItem("userName", userName);
-                alert("Имя сохранено!");
-            } else {
-                alert("Введите имя");
-            }
-        }
+            // --- 1. UI MANAGER MODULE ---
+            const UIManager = (() => {
+                const elements = {
+                    mobileMenuButton: document.getElementById('mobile-menu-button'),
+                    mobileMenu: document.getElementById('mobile-menu'),
+                    menuOpenIcon: document.getElementById('menu-open-icon'),
+                    menuCloseIcon: document.getElementById('menu-close-icon'),
+                    navLinks: document.querySelectorAll('.nav-link'),
+                    contentSections: document.querySelectorAll('.content-section'),
+                    userNameInput: document.getElementById('userName'),
+                    userNameMobileInput: document.getElementById('userNameMobile'),
+                    cursorFollower: document.getElementById('cursor-follower'),
+                    cursorDot: document.getElementById('cursor-dot'),
+                    modalContainer: document.getElementById('modal-container'),
+                };
 
-        // Добавление задания
-        function addTask() {
-            const taskDescription = prompt("Введите описание задания:");
-            if (taskDescription) {
-                tasks.push(taskDescription);
-                localStorage.setItem("tasks", JSON.stringify(tasks));
-                renderTasks();
-            }
-        }
+                const toggleMobileMenu = () => {
+                    const isOpen = mobileMenu.classList.contains('hidden');
+                    elements.mobileMenu.classList.toggle('hidden', !isOpen);
+                    elements.menuOpenIcon.classList.toggle('hidden', isOpen);
+                    elements.menuCloseIcon.classList.toggle('hidden', !isOpen);
+                };
 
-        // Удаление задания
-        function removeTask(index) {
-            tasks.splice(index, 1);
-            localStorage.setItem("tasks", JSON.stringify(tasks));
-            renderTasks();
-        }
-
-        // Добавление предмета в инвентарь
-        function addItem() {
-            const itemName = prompt("Введите название предмета:");
-            if (itemName) {
-                inventory.push(itemName);
-                localStorage.setItem("inventory", JSON.stringify(inventory));
-                renderInventory();
-            }
-        }
-
-        // Удаление предмета
-        function removeItem(index) {
-            inventory.splice(index, 1);
-            localStorage.setItem("inventory", JSON.stringify(inventory));
-            renderInventory();
-        }
-
-        // Рендеринг задач
-        function renderTasks() {
-            const tasksDiv = document.getElementById('tasks');
-            tasksDiv.innerHTML = tasks.map((task, index) => 
-                `<div class="flex justify-between items-center mb-2">
-                    <span>${task}</span>
-                    <button class="btn" onclick="removeTask(${index})">Удалить</button>
-                </div>`).join('');
-        }
-
-        // Рендеринг инвентаря
-        function renderInventory() {
-            const inventoryDiv = document.getElementById('inventory');
-            inventoryDiv.innerHTML = inventory.map((item, index) => 
-                `<div class="flex justify-between items-center mb-2">
-                    <span>${item}</span>
-                    <button class="btn" onclick="removeItem(${index})">Удалить</button>
-                </div>`).join('');
-        }
-
-        // Добавление маркера
-        function addMarker(e) {
-            const description = prompt("Введите описание для этого маркера:");
-            if (description) {
-                const marker = L.marker(e.latlng).addTo(map).bindPopup(`
-                    <div class="marker-popup">
-                        ${description}<br>
-                        <button onclick="removeMarker(${markers.length})" class="btn" style="background:red;">Удалить</button>
-                    </div>
-                `).openPopup();
-                markers.push({
-                    latLng: e.latlng,
-                    description: description
-                });
-                localStorage.setItem("markers", JSON.stringify(markers));
-            }
-        }
-
-        // Удаление маркера
-        function removeMarker(index) {
-            const marker = markers[index];
-            map.eachLayer(layer => {
-                if (layer._latlng && layer._latlng.lat === marker.latLng.lat && layer._latlng.lng === marker.latLng.lng) {
-                    map.removeLayer(layer);
-                }
-            });
-            markers.splice(index, 1);
-            localStorage.setItem("markers", JSON.stringify(markers));
-        }
-
-        // Определение местоположения пользователя
-        function locateUser() {
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(position => {
-                    userPosition = L.latLng(position.coords.latitude, position.coords.longitude);
-                    map.setView(userPosition, 15);
-                    const userMarker = L.marker(userPosition, {icon: L.icon({ iconUrl: 'https://upload.wikimedia.org/wikipedia/commons/5/5b/Simple_blue_dots_%28svg%29.svg' })}).addTo(map);
-                    userMarker.bindPopup("Ваше местоположение").openPopup();
-                }, () => {
-                    alert("Не удалось найти местоположение");
-                });
-            } else {
-                alert("Геолокация не поддерживается этим браузером");
-            }
-        }
-
-        // Построение маршрута
-        function plotRoute() {
-            const latLngs = markers.map(markerData => markerData.latLng);
-            if (latLngs.length > 1) {
-                route = L.polyline(latLngs, { color: 'red', weight: 4 }).addTo(map);
-                map.fitBounds(route.getBounds());
-            } else {
-                alert("Для построения маршрута нужно больше чем одну точку");
-            }
-        }
-
-        // Очистка всех маркеров
-        function clearMarkers() {
-            markers.forEach((markerData, index) => {
-                map.eachLayer(layer => {
-                    if (layer._latlng && layer._latlng.lat === markerData.latLng.lat && layer._latlng.lng === markerData.latLng.lng) {
-                        map.removeLayer(layer);
+                const showSection = (sectionId) => {
+                    elements.contentSections.forEach(section => section.classList.remove('active', 'animate-fade-in'));
+                    const activeSection = document.getElementById(`${sectionId}-section`);
+                    if (activeSection) {
+                        activeSection.classList.add('active');
+                        setTimeout(() => activeSection.classList.add('animate-fade-in'), 10);
                     }
-                });
-            });
-            markers = [];
-            localStorage.setItem("markers", JSON.stringify(markers));
-        }
+                    
+                    elements.navLinks.forEach(link => {
+                        link.classList.toggle('active', link.dataset.section === sectionId);
+                    });
 
-        // Инициализация маркеров
-        function renderMarkers() {
-            markers.forEach(markerData => {
-                L.marker(markerData.latLng).addTo(map).bindPopup(`
-                    <div class="marker-popup">
-                        ${markerData.description}<br>
-                        <button onclick="removeMarker(${markers.indexOf(markerData)})" class="btn" style="background:red;">Удалить</button>
-                    </div>
-                `);
-            });
-        }
+                    if (sectionId === 'map' && window.game.map.instance) {
+                        setTimeout(() => window.game.map.instance.invalidateSize(), 100);
+                    }
 
-        // Инициализация карты и меток
-        renderTasks();
-        renderInventory();
-        renderMarkers();
-        map.on('click', addMarker);
+                    if (!elements.mobileMenu.classList.contains('hidden')) {
+                        toggleMobileMenu();
+                    }
+                };
+                
+                const initCursor = () => {
+                    document.addEventListener('mousemove', e => {
+                        elements.cursorFollower.style.transform = `translate3d(${e.clientX - 20}px, ${e.clientY - 20}px, 0)`;
+                        elements.cursorDot.style.transform = `translate3d(${e.clientX - 4}px, ${e.clientY - 4}px, 0)`;
+                    });
+                };
+                
+                const showModal = (title, content, buttons) => {
+                    const buttonsHTML = buttons.map(btn => `<button class="${btn.classes}" onclick="${btn.onclick}">${btn.text}</button>`).join('');
+                    elements.modalContainer.innerHTML = `
+                        <div class="modal-content">
+                            <h2 class="text-2xl font-bold mb-4 text-cyan-400">${title}</h2>
+                            <div class="font-secondary">${content}</div>
+                            <div class="mt-6 flex justify-end gap-4">${buttonsHTML}</div>
+                        </div>`;
+                    elements.modalContainer.classList.add('active');
+                    window.game.audio.playSound('modal');
+                };
+                
+                const hideModal = () => {
+                    elements.modalContainer.classList.remove('active');
+                    elements.modalContainer.innerHTML = '';
+                };
+                window.hideModal = hideModal;
+
+                const init = () => {
+                    elements.mobileMenuButton.addEventListener('click', toggleMobileMenu);
+                    elements.navLinks.forEach(link => {
+                        link.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            showSection(link.dataset.section);
+                            window.game.audio.playSound('click');
+                        });
+                        link.addEventListener('mouseenter', () => window.game.audio.playSound('hover'));
+                    });
+                    document.querySelectorAll('.btn').forEach(btn => {
+                        btn.addEventListener('mouseenter', () => window.game.audio.playSound('hover'));
+                        btn.addEventListener('click', () => window.game.audio.playSound('click'));
+                    });
+                    initCursor();
+                };
+
+                return { init, showSection, showModal, hideModal, elements };
+            })();
+
+            // --- 2. AUDIO ENGINE MODULE ---
+            const AudioEngine = (() => {
+                const sounds = {
+                    click: document.getElementById('audio-click'),
+                    hover: document.getElementById('audio-hover'),
+                    modal: document.getElementById('audio-modal')
+                };
+                sounds.hover.volume = 0.3;
+
+                const playSound = (soundId) => {
+                    if (sounds[soundId]) {
+                        sounds[soundId].currentTime = 0;
+                        sounds[soundId].play().catch(e => console.log("Audio playback interrupted."));
+                    }
+                };
+                
+                return { playSound };
+            })();
+
+            // --- 3. THREE.JS RENDER CORE MODULE ---
+            const RenderCore = (() => {
+                const mount = document.getElementById('backgroundScene');
+                let scene, camera, renderer, composer;
+                let starField, nebula, sun, planet, interactiveObjects = [];
+
+                // Custom Shaders
+                const nebulaShader = {
+                    vertexShader: `
+                        varying vec2 vUv;
+                        void main() {
+                            vUv = uv;
+                            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                        }
+                    `,
+                    fragmentShader: `
+                        uniform float time;
+                        varying vec2 vUv;
+                        
+                        float random(vec2 st) {
+                            return fract(sin(dot(st.xy, vec2(12.9898, 78.233))) * 43758.5453123);
+                        }
+
+                        float noise(vec2 st) {
+                            vec2 i = floor(st);
+                            vec2 f = fract(st);
+                            float a = random(i);
+                            float b = random(i + vec2(1.0, 0.0));
+                            float c = random(i + vec2(0.0, 1.0));
+                            float d = random(i + vec2(1.0, 1.0));
+                            vec2 u = f * f * (3.0 - 2.0 * f);
+                            return mix(a, b, u.x) + (c - a) * u.y * (1.0 - u.x) + (d - b) * u.y * u.x;
+                        }
+
+                        void main() {
+                            vec2 st = vUv * 3.0;
+                            st.x += time * 0.01;
+                            float n = noise(st * 2.0);
+                            gl_FragColor = vec4(vec3(0.05, 0.0, 0.1) * n, 1.0) + vec4(vec3(0.5, 0.1, 0.8) * pow(noise(st * 1.5 + 0.5), 2.0), 1.0);
+                        }
+                    `
+                };
+
+                const init = () => {
+                    scene = new THREE.Scene();
+                    camera = new THREE.PerspectiveCamera(75, mount.clientWidth / mount.clientHeight, 0.1, 2000);
+                    camera.position.z = 15;
+                    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+                    renderer.setSize(mount.clientWidth, mount.clientHeight);
+                    renderer.setPixelRatio(window.devicePixelRatio);
+                    mount.appendChild(renderer.domElement);
+
+                    // Post-processing
+                    const renderScene = new THREE.RenderPass(scene, camera);
+                    const bloomPass = new THREE.UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
+                    bloomPass.threshold = 0.21;
+                    bloomPass.strength = 1.2;
+                    bloomPass.radius = 0.55;
+                    
+                    composer = new THREE.EffectComposer(renderer);
+                    composer.addPass(renderScene);
+                    composer.addPass(bloomPass);
+
+                    // Scene Objects
+                    createStarfield();
+                    createNebula();
+                    createSun();
+                    createPlanet();
+                    
+                    // Event Listeners
+                    window.addEventListener('resize', onWindowResize, false);
+                    document.addEventListener('mousemove', handleInteraction);
+                    document.addEventListener('touchmove', handleInteraction);
+                };
+                
+                const createStarfield = () => {
+                    const starsGeometry = new THREE.BufferGeometry();
+                    const starsCount = 25000;
+                    const posArray = new Float32Array(starsCount * 3);
+                    for (let i = 0; i < starsCount * 3; i++) posArray[i] = (Math.random() - 0.5) * 1500;
+                    starsGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+                    starField = new THREE.Points(starsGeometry, new THREE.PointsMaterial({ size: 0.15, color: 0xaaaaaa }));
+                    scene.add(starField);
+                };
+                
+                const createNebula = () => {
+                    const geometry = new THREE.PlaneGeometry(500, 500);
+                    const material = new THREE.ShaderMaterial({
+                        uniforms: { time: { value: 0.0 } },
+                        vertexShader: nebulaShader.vertexShader,
+                        fragmentShader: nebulaShader.fragmentShader,
+                        blending: THREE.AdditiveBlending,
+                        depthWrite: false,
+                        transparent: true
+                    });
+                    nebula = new THREE.Mesh(geometry, material);
+                    nebula.position.z = -100;
+                    scene.add(nebula);
+                };
+
+                const createSun = () => {
+                    const geometry = new THREE.SphereGeometry(10, 32, 32);
+                    const material = new THREE.MeshBasicMaterial({ color: 0xffddaa, map: createSunTexture() });
+                    sun = new THREE.Mesh(geometry, material);
+                    sun.position.set(-150, 50, -300);
+                    scene.add(sun);
+                    const sunLight = new THREE.PointLight(0xffddaa, 1.5, 2000);
+                    sun.add(sunLight);
+                };
+
+                const createSunTexture = () => {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = 128;
+                    canvas.height = 128;
+                    const context = canvas.getContext('2d');
+                    const gradient = context.createRadialGradient(64, 64, 0, 64, 64, 64);
+                    gradient.addColorStop(0, 'rgba(255, 255, 255, 1)');
+                    gradient.addColorStop(0.2, 'rgba(255, 255, 0, 1)');
+                    gradient.addColorStop(0.4, 'rgba(255, 165, 0, 1)');
+                    gradient.addColorStop(1, 'rgba(255, 100, 0, 0)');
+                    context.fillStyle = gradient;
+                    context.fillRect(0, 0, 128, 128);
+                    return new THREE.CanvasTexture(canvas);
+                };
+
+                const createPlanet = () => {
+                    const geometry = new THREE.SphereGeometry(20, 64, 64);
+                    const material = new THREE.MeshPhongMaterial({
+                        color: 0x4f83d4,
+                        specular: 0x111111,
+                        shininess: 5
+                    });
+                    planet = new THREE.Mesh(geometry, material);
+                    planet.position.set(100, -30, -200);
+                    scene.add(planet);
+                };
+
+                const createInteractiveObject = (event) => {
+                    const clientX = event.touches ? event.touches[0].clientX : event.clientX;
+                    const clientY = event.touches ? event.touches[0].clientY : event.clientY;
+                    const vector = new THREE.Vector3((clientX/window.innerWidth)*2-1, -(clientY/window.innerHeight)*2+1, 0.5);
+                    vector.unproject(camera);
+                    const dir = vector.sub(camera.position).normalize();
+                    const pos = camera.position.clone().add(dir.multiplyScalar(-camera.position.z / dir.z));
+                    const geometry = new THREE.IcosahedronGeometry(Math.random() * 0.4 + 0.15, 1);
+                    const color = [0x00fff2, 0xff00ff, 0x00aaff, 0xffd700][Math.floor(Math.random() * 4)];
+                    const material = new THREE.MeshStandardMaterial({ color, metalness: 0.8, roughness: 0.2, emissive: color, emissiveIntensity: 0.5 });
+                    const mesh = new THREE.Mesh(geometry, material);
+                    mesh.position.copy(pos);
+                    mesh.userData.velocity = new THREE.Vector3((Math.random()-0.5)*0.05, (Math.random()-0.5)*0.05, (Math.random()-0.5)*0.05);
+                    mesh.userData.life = 0;
+                    scene.add(mesh);
+                    interactiveObjects.push(mesh);
+                };
+
+                let interactionTimeout;
+                const handleInteraction = (event) => {
+                    if(interactionTimeout) return;
+                    interactionTimeout = setTimeout(() => { createInteractiveObject(event); interactionTimeout = null; }, 40);
+                };
+                
+                const onWindowResize = () => {
+                    camera.aspect = mount.clientWidth / mount.clientHeight;
+                    camera.updateProjectionMatrix();
+                    renderer.setSize(mount.clientWidth, mount.clientHeight);
+                    composer.setSize(mount.clientWidth, mount.clientHeight);
+                };
+
+                const animate = () => {
+                    requestAnimationFrame(animate);
+                    const time = Date.now() * 0.0001;
+                    
+                    starField.rotation.y += 0.00005;
+                    nebula.material.uniforms.time.value = time;
+                    planet.rotation.y += 0.0005;
+                    
+                    interactiveObjects.forEach((o, index) => { 
+                        o.position.add(o.userData.velocity); 
+                        o.rotation.x += 0.01; 
+                        o.rotation.y += 0.01;
+                        o.userData.life += 1;
+                        if (o.userData.life > 240) { // 4 seconds at 60fps
+                             scene.remove(o);
+                             o.geometry.dispose();
+                             o.material.dispose();
+                             interactiveObjects.splice(index, 1);
+                        }
+                    });
+                    
+                    composer.render();
+                };
+
+                return { init, animate };
+            })();
+
+            // --- 4. LEAFLET GEO-SYSTEM MODULE ---
+            const MapModule = (() => {
+                let map, markers = [], route, worldEventMarkers = [];
+                let showEvents = false;
+                
+                const init = () => {
+                    map = L.map('map').setView([51.505, -0.09], 13);
+                    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                        attribution: '&copy; OpenStreetMap &copy; CARTO',
+                        subdomains: 'abcd',
+                        maxZoom: 19
+                    }).addTo(map);
+
+                    const savedMarkers = JSON.parse(localStorage.getItem("markers")) || [];
+                    savedMarkers.forEach(m => addMarkerToMap(m.latLng, m.description, false));
+                    map.on('click', onMapClick);
+                };
+
+                const onMapClick = (e) => {
+                    const description = prompt("Введите описание для этого маркера:");
+                    if (description) {
+                        addMarkerToMap(e.latlng, description, true);
+                    }
+                };
+                
+                const addMarkerToMap = (latLng, description, save) => {
+                    const markerId = markers.length;
+                    const popupContent = `
+                        <div class="marker-popup">
+                            ${description}<br>
+                            <button onclick="window.game.map.removeMarker(${markerId})" class="btn danger" style="padding: 5px 10px;">Удалить</button>
+                        </div>`;
+                    const marker = L.marker(latLng).addTo(map).bindPopup(popupContent);
+                    markers.push({ latLng, description, leafletMarker: marker });
+                    if (save) {
+                        saveMarkersToStorage();
+                    }
+                };
+                
+                const removeMarker = (index) => {
+                    if (markers[index]) {
+                        map.removeLayer(markers[index].leafletMarker);
+                        markers.splice(index, 1);
+                        saveMarkersToStorage();
+                    }
+                };
+                window.game.map = { removeMarker };
+
+                const saveMarkersToStorage = () => {
+                     const simplifiedMarkers = markers.map(m => ({ latLng: m.latLng, description: m.description }));
+                     localStorage.setItem("markers", JSON.stringify(simplifiedMarkers));
+                };
+
+                const clearAllMarkers = () => {
+                    markers.forEach(m => map.removeLayer(m.leafletMarker));
+                    markers = [];
+                    localStorage.removeItem("markers");
+                };
+
+                const locateUser = () => {
+                    navigator.geolocation.getCurrentPosition(position => {
+                        const userPosition = L.latLng(position.coords.latitude, position.coords.longitude);
+                        map.setView(userPosition, 15);
+                        L.marker(userPosition).addTo(map).bindPopup("Ваше местоположение").openPopup();
+                    }, () => alert("Не удалось найти местоположение"));
+                };
+                
+                const plotRoute = () => {
+                    if (route) map.removeLayer(route);
+                    const latLngs = markers.map(m => m.latLng);
+                    if (latLngs.length > 1) {
+                        route = L.polyline(latLngs, { color: '#00fff2', weight: 3, dashArray: '5, 10' }).addTo(map);
+                        map.fitBounds(route.getBounds());
+                    } else {
+                        alert("Нужно как минимум 2 метки для маршрута");
+                    }
+                };
+
+                const toggleWorldEvents = () => {
+                    showEvents = !showEvents;
+                    if (showEvents) {
+                        const bounds = map.getBounds();
+                        for(let i=0; i<5; i++) {
+                            const lat = Math.random() * (bounds.getNorth() - bounds.getSouth()) + bounds.getSouth();
+                            const lng = Math.random() * (bounds.getEast() - bounds.getWest()) + bounds.getWest();
+                            const eventTypes = ['Сбой системы', 'Контрабанда', 'Перестрелка банд'];
+                            const type = eventTypes[Math.floor(Math.random() * eventTypes.length)];
+                            const eventIcon = L.divIcon({className: 'blinking-icon', html: '⚠️'});
+                            const marker = L.marker([lat, lng], {icon: eventIcon}).addTo(map).bindPopup(type);
+                            worldEventMarkers.push(marker);
+                        }
+                    } else {
+                        worldEventMarkers.forEach(m => map.removeLayer(m));
+                        worldEventMarkers = [];
+                    }
+                };
+
+                return { init, instance: map, clearAllMarkers, locateUser, plotRoute, toggleWorldEvents };
+            })();
+
+            // --- 5. GAME LOGIC & STATE MANAGER ---
+            const GameStateManager = (() => {
+                let state = {
+                    userName: '',
+                    quests: [],
+                    inventory: [],
+                    factions: {},
+                    craftingRecipes: []
+                };
+
+                const saveState = () => {
+                    localStorage.setItem('vambapunk_gamestate', JSON.stringify(state));
+                };
+
+                const loadState = () => {
+                    const savedState = localStorage.getItem('vambapunk_gamestate');
+                    if (savedState) {
+                        state = JSON.parse(savedState);
+                    } else {
+                        // Default state for new players
+                        state = {
+                            userName: '',
+                            quests: [],
+                            inventory: [{name: 'Слабый стимулятор', quantity: 2}],
+                            factions: {
+                                'corp_zeta': { name: 'Корпорация ZETA', reputation: 0 },
+                                'synth_syndicate': { name: 'Синтетический Синдикат', reputation: 50 },
+                                'data_angels': { name: 'Дата-Ангелы', reputation: -10 }
+                            },
+                            craftingRecipes: [
+                                { name: 'Улучшенный стимулятор', components: [{name: 'Слабый стимулятор', quantity: 2}, {name: 'Хим. реагент', quantity: 1}] }
+                            ]
+                        };
+                    }
+                };
+
+                const saveName = (isMobile = false) => {
+                    const input = isMobile ? UIManager.elements.userNameMobileInput : UIManager.elements.userNameInput;
+                    if (input.value) {
+                        state.userName = input.value;
+                        saveState();
+                        UIManager.showModal('Имя сохранено', `Ваше имя оперативника, <strong>${input.value}</strong>, сохранено в системе.`, [{ text: 'Закрыть', classes: 'btn', onclick: 'window.hideModal()' }]);
+                    } else {
+                        alert("Введите имя");
+                    }
+                };
+
+                const loadUserName = () => {
+                    if (state.userName) {
+                        UIManager.elements.userNameInput.value = state.userName;
+                        UIManager.elements.userNameMobileInput.value = state.userName;
+                    }
+                };
+
+                // --- Sub-module: Quests ---
+                const quests = (() => {
+                    const questTemplates = [
+                        { title: 'Доставка данных', description: 'Доставить зашифрованный пакет данных в точку X.', reward: 10, faction: 'data_angels' },
+                        { title: 'Устранение цели', description: 'Нейтрализовать конкурента корпорации.', reward: 50, faction: 'corp_zeta' },
+                        { title: 'Кража прототипа', description: 'Украсть прототип кибер-импланта.', reward: 100, faction: 'synth_syndicate' }
+                    ];
+
+                    const getNewQuest = () => {
+                        const template = questTemplates[Math.floor(Math.random() * questTemplates.length)];
+                        state.quests.push({ ...template, id: Date.now(), completed: false });
+                        saveState();
+                        renderQuests();
+                    };
+
+                    const completeQuest = (id) => {
+                        const quest = state.quests.find(q => q.id === id);
+                        if (quest) {
+                            quest.completed = true;
+                            state.factions[quest.faction].reputation += quest.reward;
+                            saveState();
+                            renderQuests();
+                            renderFactions();
+                        }
+                    };
+
+                    const renderQuests = () => {
+                        const listDiv = document.getElementById('quests-list');
+                        listDiv.innerHTML = state.quests.map(q => `
+                            <div class="list-item">
+                                <div>
+                                    <h4 class="font-bold text-lg ${q.completed ? 'line-through text-gray-500' : 'text-cyan-400'}">${q.title}</h4>
+                                    <p class="font-secondary text-sm">${q.description}</p>
+                                </div>
+                                ${!q.completed ? `<button class="btn" onclick="window.game.quests.completeQuest(${q.id})">Выполнить</button>` : ''}
+                            </div>
+                        `).join('');
+                    };
+                    
+                    return { getNewQuest, completeQuest, renderQuests };
+                })();
+
+
+                // --- Sub-module: Inventory ---
+                const inventory = (() => {
+                     const addItem = () => {
+                        const itemName = prompt("Введите название предмета:");
+                        if (itemName) {
+                            const existingItem = state.inventory.find(i => i.name === itemName);
+                            if (existingItem) existingItem.quantity++;
+                            else state.inventory.push({ name: itemName, quantity: 1 });
+                            saveState();
+                            renderInventory();
+                        }
+                    };
+                    
+                    const renderInventory = () => {
+                        const listDiv = document.getElementById('inventory-list');
+                        listDiv.innerHTML = state.inventory.map(item => `
+                            <div class="list-item">
+                                <span>${item.name} (x${item.quantity})</span>
+                            </div>
+                        `).join('');
+                    };
+
+                    return { addItem, renderInventory };
+                })();
+                
+                // --- Sub-module: Factions ---
+                const factions = (() => {
+                    const renderFactions = () => {
+                        const listDiv = document.getElementById('factions-list');
+                        listDiv.innerHTML = Object.values(state.factions).map(f => `
+                            <div>
+                                <h4 class="text-xl font-bold">${f.name}</h4>
+                                <div class="progress-bar mt-1">
+                                    <div class="progress-bar-inner" style="width: ${f.reputation}%"></div>
+                                </div>
+                                <p class="text-right text-sm font-secondary">${f.reputation}/100</p>
+                            </div>
+                        `).join('');
+                    };
+                    return { renderFactions };
+                })();
+                
+                // --- Sub-module: Crafting ---
+                const crafting = (() => {
+                    const showCraftingModal = () => {
+                        const content = state.craftingRecipes.map(recipe => {
+                            const canCraft = recipe.components.every(comp => {
+                                const itemInInv = state.inventory.find(i => i.name === comp.name);
+                                return itemInInv && itemInInv.quantity >= comp.quantity;
+                            });
+                            return `
+                                <div class="list-item">
+                                    <span>${recipe.name}</span>
+                                    <button class="btn" ${canCraft ? '' : 'disabled'}>Создать</button>
+                                </div>`;
+                        }).join('');
+                        UIManager.showModal('Верстак', content, [{ text: 'Закрыть', classes: 'btn danger', onclick: 'window.hideModal()' }]);
+                    };
+
+                    const renderCrafting = () => {
+                        const listDiv = document.getElementById('crafting-list');
+                        listDiv.innerHTML = ``; // Placeholder
+                    };
+
+                    return { showCraftingModal, renderCrafting };
+                })();
+
+                const init = () => {
+                    loadState();
+                    loadUserName();
+                    quests.renderQuests();
+                    inventory.renderInventory();
+                    factions.renderFactions();
+                    crafting.renderCrafting();
+                };
+
+                return {
+                    init,
+                    saveName,
+                    quests,
+                    inventory,
+                    factions,
+                    crafting,
+                    map: MapModule
+                };
+            })();
+
+            // --- INITIALIZATION ---
+            function initialize() {
+                UIManager.init();
+                RenderCore.init();
+                MapModule.init();
+                GameStateManager.init();
+                
+                UIManager.showSection('map');
+                RenderCore.animate();
+                console.log("Vambapunk OS Initialized. Welcome, operative.");
+            }
+
+            // --- Execute Bootstrapper ---
+            initialize();
+            window.game = GameStateManager;
+        });
     </script>
 </body>
-
 </html>
