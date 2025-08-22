@@ -1,292 +1,307 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Динамичная Вселенная</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
-        /* Убираем прокрутку на странице */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+        
         body, html {
             margin: 0;
             padding: 0;
             height: 100%;
             overflow: hidden;
-            font-family: Arial, sans-serif;
+            font-family: 'Inter', sans-serif;
+            background-color: #000;
         }
-
-        /* Настроим контейнер для фона */
+        
         #backgroundScene {
-            position: absolute;
+            position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            z-index: -1; /* Это сделает сцену фоном */
+            z-index: 0;
         }
 
-        /* Контейнер для контента */
-        .content {
-            position: relative;
-            z-index: 1;
-            color: white;
-            text-align: center;
-            padding-top: 50px;
-        }
-
-        /* Стиль для навигационного меню */
-        nav {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            z-index: 2;
-        }
-
-        nav ul {
-            list-style-type: none;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            gap: 15px;
-        }
-
-        nav ul li {
-            display: inline;
-        }
-
-        nav ul li a {
-            text-decoration: none;
-            color: white;
-            font-size: 18px;
-            font-weight: bold;
-            padding: 10px;
-            background-color: rgba(0, 0, 0, 0.5);
-            border-radius: 5px;
-            transition: background-color 0.3s ease;
-        }
-
-        nav ul li a:hover {
-            background-color: rgba(0, 0, 0, 0.7);
-        }
-
-        /* Контейнер для разделов */
-        .section {
+        .content-section {
             display: none;
         }
 
-        .section.active {
+        .content-section.active {
             display: block;
         }
 
-        .section h2 {
-            margin-bottom: 20px;
+        @keyframes fade-in-down {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
-        .section p {
-            font-size: 16px;
+        @keyframes fade-in-up {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .animate-fade-in-down {
+            animation: fade-in-down 0.6s ease-out forwards;
         }
 
+        .animate-fade-in-up {
+            animation: fade-in-up 0.6s ease-out forwards;
+        }
     </style>
 </head>
-<body>
-    <!-- Контейнер для фона -->
+<body class="bg-black text-white">
     <div id="backgroundScene"></div>
 
-    <!-- Навигационное меню -->
-    <nav>
-        <ul>
-            <li><a href="#" onclick="showSection('home')">Главная</a></li>
-            <li><a href="#" onclick="showSection('about')">О проекте</a></li>
-            <li><a href="#" onclick="showSection('contact')">Контакты</a></li>
-        </ul>
-    </nav>
+    <!-- Header -->
+    <header class="absolute top-0 left-0 w-full z-20 p-4 md:p-6">
+        <div class="container mx-auto flex justify-between items-center">
+            <div class="text-2xl font-bold tracking-wider">
+                <span class="text-cyan-400">Динамичная</span> Вселенная
+            </div>
 
-    <!-- Остальная часть сайта -->
-    <div class="content">
-        <h1>Привет, это пример с динамичным фоном!</h1>
-        <p>Интерактивная вселенная, которая оживает на фоне.</p>
-    </div>
+            <!-- Desktop Menu -->
+            <nav class="hidden md:block">
+                <ul class="flex items-center space-x-4">
+                    <li><a href="#" data-section="home" class="nav-link px-4 py-2 rounded-md text-lg font-medium transition-all duration-300">Главная</a></li>
+                    <li><a href="#" data-section="about" class="nav-link px-4 py-2 rounded-md text-lg font-medium transition-all duration-300">О проекте</a></li>
+                    <li><a href="#" data-section="contact" class="nav-link px-4 py-2 rounded-md text-lg font-medium transition-all duration-300">Контакты</a></li>
+                </ul>
+            </nav>
 
-    <!-- Разделы контента -->
-    <div id="home" class="section active">
-        <h2>Добро пожаловать в динамичную вселенную Вамбы!</h2>
-        <p>Здесь вы можете взаимодействовать с виртуальным миром, который меняется в зависимости от ваших действий.</p>
-    </div>
+            <!-- Mobile Menu Button -->
+            <div class="md:hidden">
+                <button id="mobile-menu-button" class="text-white focus:outline-none" aria-label="Toggle menu">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path id="menu-open-icon" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path>
+                        <path id="menu-close-icon" class="hidden" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
 
-    <div id="about" class="section">
-        <h2>О проекте</h2>
-        <p>Это пример интерактивного фона, созданного с использованием технологии Three.js. Мы создали динамичную вселенную, которая реагирует на действия пользователя.</p>
-    </div>
+        <!-- Mobile Menu -->
+        <div id="mobile-menu" class="hidden md:hidden mt-4 bg-black bg-opacity-70 backdrop-blur-md rounded-lg p-2">
+            <nav>
+                <ul>
+                    <li><a href="#" data-section="home" class="nav-link block text-center px-4 py-2 rounded-md text-lg font-medium transition-all duration-300">Главная</a></li>
+                    <li><a href="#" data-section="about" class="nav-link block text-center px-4 py-2 rounded-md text-lg font-medium transition-all duration-300">О проекте</a></li>
+                    <li><a href="#" data-section="contact" class="nav-link block text-center px-4 py-2 rounded-md text-lg font-medium transition-all duration-300">Контакты</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
 
-    <div id="contact" class="section">
-        <h2>Контакты</h2>
-        <p>Для связи с нами, пишите на <a href="xxxtrapxxx81@gmail.com">xxxtrapxxx81@gmail.com</a>.</p>
-    </div>
+    <!-- Content -->
+    <main class="relative z-10 flex items-center justify-center h-full p-4 md:p-8">
+        <div class="max-w-4xl w-full bg-black bg-opacity-50 p-8 rounded-2xl shadow-2xl backdrop-blur-sm border border-gray-700">
+            <div id="home" class="content-section text-center">
+                <h2 class="text-4xl md:text-5xl font-bold mb-4 animate-fade-in-down">Добро пожаловать в Динамичную Вселенную!</h2>
+                <p class="text-lg md:text-xl text-gray-300 animate-fade-in-up">Здесь вы можете взаимодействовать с виртуальным миром, который меняется в зависимости от ваших действий.</p>
+            </div>
+            <div id="about" class="content-section text-center">
+                <h2 class="text-4xl md:text-5xl font-bold mb-4 animate-fade-in-down">О проекте</h2>
+                <p class="text-lg md:text-xl text-gray-300 animate-fade-in-up">Это интерактивный фон, созданный с использованием Three.js. Мы создали динамичную вселенную, которая реагирует на действия пользователя в реальном времени.</p>
+            </div>
+            <div id="contact" class="content-section text-center">
+                <h2 class="text-4xl md:text-5xl font-bold mb-4 animate-fade-in-down">Контакты</h2>
+                <p class="text-lg md:text-xl text-gray-300 animate-fade-in-up">
+                    Для связи с нами, пишите на <a href="mailto:xxxtrapxxx81@gmail.com" class="text-cyan-400 hover:underline">xxxtrapxxx81@gmail.com</a>.
+                </p>
+            </div>
+        </div>
+    </main>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
-        // Код с Three.js для динамичного фона
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- UI LOGIC ---
+            const mobileMenuButton = document.getElementById('mobile-menu-button');
+            const mobileMenu = document.getElementById('mobile-menu');
+            const menuOpenIcon = document.getElementById('menu-open-icon');
+            const menuCloseIcon = document.getElementById('menu-close-icon');
+            const navLinks = document.querySelectorAll('.nav-link');
+            const contentSections = document.querySelectorAll('.content-section');
 
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        document.getElementById("backgroundScene").appendChild(renderer.domElement);
+            const toggleMobileMenu = () => {
+                const isOpen = mobileMenu.classList.contains('hidden');
+                mobileMenu.classList.toggle('hidden', !isOpen);
+                menuOpenIcon.classList.toggle('hidden', isOpen);
+                menuCloseIcon.classList.toggle('hidden', !isOpen);
+            };
 
-        // Используем HDR освещение для улучшенной освещенности
-        const hdrTexture = new THREE.CubeTextureLoader().load([
-            'path_to_posx.jpg', 'path_to_negx.jpg',
-            'path_to_posy.jpg', 'path_to_negy.jpg',
-            'path_to_posz.jpg', 'path_to_negz.jpg'
-        ]);
-        scene.background = hdrTexture;
-        scene.environment = hdrTexture;
-
-        // Атмосферное освещение с эффектами
-        const ambientLight = new THREE.AmbientLight(0x404040, 1.0);  // Мягкое амбиентное освещение
-        scene.add(ambientLight);
-
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5);
-        directionalLight.position.set(1, 1, 1).normalize();
-        scene.add(directionalLight);
-
-        // Добавим красивое звездное небо с лучами
-        const starsGeometry = new THREE.BufferGeometry();
-        const starsMaterial = new THREE.PointsMaterial({ color: 0x888888, size: 0.2, blending: THREE.AdditiveBlending });
-        const starsCount = 5000;
-        const starPositions = [];
-        for (let i = 0; i < starsCount; i++) {
-            const x = Math.random() * 2000 - 1000;
-            const y = Math.random() * 2000 - 1000;
-            const z = Math.random() * 2000 - 1000;
-            starPositions.push(x, y, z);
-        }
-        starsGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starPositions, 3));
-        const stars = new THREE.Points(starsGeometry, starsMaterial);
-        scene.add(stars);
-
-        // Используем ShaderMaterial для создания красивых облаков с объемом
-        function createClouds() {
-            const cloudGeometry = new THREE.SphereGeometry(200, 100, 100);
-            const cloudMaterial = new THREE.ShaderMaterial({
-                uniforms: {
-                    time: { value: 0.0 },
-                    color: { value: new THREE.Color(0x777777) },
-                },
-                vertexShader: `
-                    varying vec3 vNormal;
-                    void main() {
-                        vNormal = normalize(normal);
-                        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-                    }`,
-                fragmentShader: `
-                    uniform float time;
-                    uniform vec3 color;
-                    varying vec3 vNormal;
-                    void main() {
-                        float brightness = pow(0.5 - dot(vNormal, vec3(0, 0, 1)), 3.0);
-                        gl_FragColor = vec4(color * brightness, 1.0);
-                    }`,
-                transparent: true,
-                opacity: 0.5,
-            });
-
-            const cloud = new THREE.Mesh(cloudGeometry, cloudMaterial);
-            scene.add(cloud);
-            cloud.rotation.y += 0.01;
-            return cloud;
-        }
-
-        // Генерация существа с текстурой
-        function createNeuralCreature(position) {
-            const geometry = new THREE.SphereGeometry(0.5, 32, 32);
-            const texture = new THREE.TextureLoader().load('path_to_creature_texture.jpg'); // Текстура для существа
-            const material = new THREE.MeshStandardMaterial({ map: texture });
-            const creature = new THREE.Mesh(geometry, material);
-            creature.position.set(position.x, position.y, position.z);
-            scene.add(creature);
-            
-            function moveCreature() {
-                creature.position.x += Math.random() * 0.05 - 0.025;
-                creature.position.y += Math.random() * 0.05 - 0.025;
-                creature.position.z += Math.random() * 0.05 - 0.025;
-            }
-
-            return { creature, moveCreature };
-        }
-
-        // Генерация случайных фракталов и объектов
-        function createRandomWorld(position) {
-            const size = Math.random() * 0.5 + 0.3;
-            const geometry = new THREE.IcosahedronGeometry(size, 3);
-            const material = new THREE.MeshStandardMaterial({
-                color: Math.random() * 0xffffff,
-                metalness: 0.7,
-                roughness: 0.2,
-            });
-            const fractal = new THREE.Mesh(geometry, material);
-            fractal.position.set(position.x, position.y, position.z);
-            scene.add(fractal);
-
-            setTimeout(() => {
-                scene.remove(fractal);
-            }, 5000);
-        }
-
-        // Взаимодействие с миром
-        function interactWithUniverse(event) {
-            const x = ((event.clientX || event.touches[0].clientX) - renderer.domElement.offsetLeft) / renderer.domElement.width * 2 - 1;
-            const y = -((event.clientY || event.touches[0].clientY) - renderer.domElement.offsetTop) / renderer.domElement.height * 2 + 1;
-
-            const vector = new THREE.Vector3(x, y, 0);
-            vector.unproject(camera);
-            
-            const direction = vector.sub(camera.position).normalize();
-            const distance = -camera.position.z / direction.z;
-            const position = camera.position.clone().add(direction.multiplyScalar(distance));
-
-            createRandomWorld(position);
-            createNeuralCreature(position);
-        }
-
-        // Камера и анимация
-        camera.position.z = 5;
-
-        function animate() {
-            requestAnimationFrame(animate);
-
-            // Обновление облаков
-            scene.children.forEach(child => {
-                if (child instanceof THREE.Mesh && child.material instanceof THREE.ShaderMaterial) {
-                    child.material.uniforms.time.value += 0.01;
+            const showSection = (sectionId) => {
+                contentSections.forEach(section => {
+                    section.classList.remove('active');
+                });
+                const activeSection = document.getElementById(sectionId);
+                if (activeSection) {
+                    activeSection.classList.add('active');
                 }
+                
+                navLinks.forEach(link => {
+                    if (link.dataset.section === sectionId) {
+                        link.classList.add('bg-cyan-500', 'text-white', 'shadow-lg');
+                        link.classList.remove('text-gray-300', 'hover:bg-gray-700', 'hover:text-white');
+                    } else {
+                        link.classList.remove('bg-cyan-500', 'text-white', 'shadow-lg');
+                        link.classList.add('text-gray-300', 'hover:bg-gray-700', 'hover:text-white');
+                    }
+                });
+
+                if (!mobileMenu.classList.contains('hidden')) {
+                    toggleMobileMenu();
+                }
+            };
+            
+            mobileMenuButton.addEventListener('click', toggleMobileMenu);
+
+            navLinks.forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    showSection(link.dataset.section);
+                });
             });
 
-            // Двигаем нейросетевые существа
-            neuralCreatures.forEach(creature => creature.moveCreature());
+            // Show initial section
+            showSection('home');
 
-            renderer.render(scene, camera);
-        }
+            // --- THREE.JS LOGIC ---
+            const mount = document.getElementById('backgroundScene');
+            if (!mount) return;
 
-        // Массив для хранения нейросетевых существ
-        const neuralCreatures = [];
+            const objects = [];
 
-        // Слушаем события для рисования и взаимодействия с миром
-        document.addEventListener('mousemove', function (event) {
-            interactWithUniverse(event);
+            // Scene, Camera, Renderer
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(75, mount.clientWidth / mount.clientHeight, 0.1, 2000);
+            camera.position.z = 15;
+
+            const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(mount.clientWidth, mount.clientHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            mount.appendChild(renderer.domElement);
+
+            // Lighting
+            const ambientLight = new THREE.AmbientLight(0x404040, 2);
+            scene.add(ambientLight);
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5);
+            directionalLight.position.set(5, 5, 5).normalize();
+            scene.add(directionalLight);
+
+            // Stars
+            const starsGeometry = new THREE.BufferGeometry();
+            const starsCount = 10000;
+            const posArray = new Float32Array(starsCount * 3);
+            for (let i = 0; i < starsCount * 3; i++) {
+                posArray[i] = (Math.random() - 0.5) * 2000;
+            }
+            starsGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+            const starsMaterial = new THREE.PointsMaterial({
+                size: 0.2,
+                color: 0xaaaaaa,
+                blending: THREE.AdditiveBlending,
+            });
+            const starField = new THREE.Points(starsGeometry, starsMaterial);
+            scene.add(starField);
+            
+            // Interaction Handler
+            const createInteractiveObject = (event) => {
+                const isTouchEvent = event.touches && event.touches.length > 0;
+                const clientX = isTouchEvent ? event.touches[0].clientX : event.clientX;
+                const clientY = isTouchEvent ? event.touches[0].clientY : event.clientY;
+
+                const vector = new THREE.Vector3();
+                vector.x = (clientX / window.innerWidth) * 2 - 1;
+                vector.y = -(clientY / window.innerHeight) * 2 + 1;
+                vector.z = 0.5;
+                vector.unproject(camera);
+
+                const dir = vector.sub(camera.position).normalize();
+                const distance = -camera.position.z / dir.z;
+                const pos = camera.position.clone().add(dir.multiplyScalar(distance));
+
+                const geometry = new THREE.IcosahedronGeometry(Math.random() * 0.5 + 0.2, 1);
+                const material = new THREE.MeshStandardMaterial({
+                    color: new THREE.Color(Math.random(), Math.random(), Math.random()),
+                    metalness: 0.7,
+                    roughness: 0.2,
+                    emissive: new THREE.Color(0x111111),
+                });
+                const mesh = new THREE.Mesh(geometry, material);
+                mesh.position.copy(pos);
+                
+                mesh.userData.velocity = new THREE.Vector3(
+                    (Math.random() - 0.5) * 0.1,
+                    (Math.random() - 0.5) * 0.1,
+                    (Math.random() - 0.5) * 0.1,
+                );
+
+                scene.add(mesh);
+                objects.push(mesh);
+
+                setTimeout(() => {
+                    scene.remove(mesh);
+                    mesh.geometry.dispose();
+                    mesh.material.dispose();
+                    const index = objects.indexOf(mesh);
+                    if (index > -1) {
+                        objects.splice(index, 1);
+                    }
+                }, 5000);
+            };
+
+            // Animation loop
+            const animate = () => {
+                requestAnimationFrame(animate);
+
+                objects.forEach(mesh => {
+                    mesh.position.add(mesh.userData.velocity);
+                    mesh.rotation.x += 0.01;
+                    mesh.rotation.y += 0.01;
+                });
+                
+                starField.rotation.y += 0.0001;
+
+                renderer.render(scene, camera);
+            };
+
+            const onWindowResize = () => {
+                camera.aspect = mount.clientWidth / mount.clientHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(mount.clientWidth, mount.clientHeight);
+            };
+            window.addEventListener('resize', onWindowResize, false);
+            
+            let interactionTimeout;
+            const handleInteraction = (event) => {
+                if(interactionTimeout) return;
+                interactionTimeout = setTimeout(() => {
+                    createInteractiveObject(event);
+                    interactionTimeout = null;
+                }, 30); // Throttle to one object per 30ms
+            };
+            
+            document.addEventListener('mousemove', handleInteraction);
+            document.addEventListener('touchmove', handleInteraction);
+
+            animate();
         });
-
-        document.addEventListener('click', function () {
-            interactWithUniverse(event);
-        });
-
-        animate();
-
-        // Функция для отображения разделов
-        function showSection(sectionId) {
-            const sections = document.querySelectorAll('.section');
-            sections.forEach(section => section.classList.remove('active'));
-            document.getElementById(sectionId).classList.add('active');
-        }
     </script>
 </body>
 </html>
