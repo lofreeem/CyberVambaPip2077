@@ -1,359 +1,401 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CyberVambaPip2077</title>
+    <title>CyberVambaPip 2077 :: [ONLINE]</title>
+    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
     <style>
-        * {
-            box-sizing: border-box;
-            font-family: 'Courier New', monospace;
+        :root {
+            --pip-boy-green: #2dff8a;
+            --pip-boy-green-t: rgba(45, 255, 138, 0.1);
+            --pip-boy-green-t-heavy: rgba(45, 255, 138, 0.2);
+            --pip-boy-bg: #031006;
+            --font-main: 'VT323', monospace;
         }
 
-        body {
-            margin: 0;
-            background: #001a1a;
-            color: #0ff;
-            line-height: 1.6;
-            overflow-x: hidden;
+        * { box-sizing: border-box; cursor: none; }
+
+        html, body {
+            height: 100%; margin: 0; padding: 0; background: #000;
+            color: var(--pip-boy-green); font-family: var(--font-main);
+            overflow: hidden; user-select: none;
         }
 
-        .container {
-            max-width: 600px;
-            margin: 20px auto;
-            padding: 20px;
-            border: 3px solid #0ff;
-            box-shadow: 0 0 20px #0ff8;
-            border-radius: 10px;
-            background: #002626;
-            position: relative;
-            min-height: 90vh;
+        /* --- Main Layout --- */
+        .pip-boy-container {
+            display: flex; justify-content: center; align-items: center;
+            width: 100vw; height: 100vh; padding: 1vw;
         }
 
-        .scanline {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(to bottom,
-                transparent 50%,
-                #0ff1 51%,
-                transparent 52%);
-            pointer-events: none;
-            animation: scan 4s linear infinite;
-        }
-
-        h1 {
-            color: #0ff;
-            text-shadow: 0 0 10px #0ff;
-            text-align: center;
-            font-size: 2.5em;
-            margin: 0 0 20px;
-        }
-
-        .data-panel {
-            border: 2px solid #0ff;
-            padding: 15px;
-            margin: 10px 0;
-            background: #000d0d;
-        }
-
-        input, button, textarea {
-            background: #001a1a;
-            border: 1px solid #0ff;
-            color: #0ff;
-            padding: 8px;
-            margin: 5px 0;
-            width: 100%;
-            font-size: 1.1em;
-        }
-
-        button {
-            background: #004d4d;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        button:hover {
-            background: #008080;
-            box-shadow: 0 0 15px #0ff;
-        }
-
-        #map-link {
-            display: block;
-            text-align: center;
-            padding: 15px;
-            border: 2px solid #0ff;
-            margin: 20px 0;
-            color: #0ff;
-            text-decoration: none;
-            transition: all 0.3s;
-        }
-
-        #map-link:hover {
-            background: #0ff2;
-        }
-
-        .glow {
-            animation: glow 1.5s ease-in-out infinite alternate;
-        }
-
-        .tabs {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
+        .screen-wrapper {
+            width: 100%; height: 100%; border: 3px solid var(--pip-boy-green);
+            border-radius: 25px; box-shadow: 0 0 25px var(--pip-boy-green), inset 0 0 25px var(--pip-boy-green);
+            background: var(--pip-boy-bg); padding: 20px; position: relative;
+            display: flex; flex-direction: column; overflow: hidden;
         }
         
-        .tab {
-            flex: 1;
-            padding: 10px;
-            text-align: center;
-            border: 2px solid #0ff;
-            cursor: pointer;
-            transition: all 0.3s;
+        /* --- CRT Effects --- */
+        .screen-wrapper::before { /* Scanlines */
+            content: ""; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(to bottom, transparent 50%, rgba(0,0,0,0.4) 51%);
+            background-size: 100% 4px; animation: scan 10s linear infinite; pointer-events: none; z-index: 2;
         }
-        
-        .tab.active {
-            background: #0ff3;
-        }
-        
-        .content-section {
-            display: none;
-        }
-        
-        .content-section.active {
-            display: block;
-        }
-        
-        .item-card {
-            border: 1px solid #0ff;
-            padding: 10px;
-            margin: 10px 0;
-            position: relative;
-            background: #001111;
-        }
-        
-        .item-image {
-            max-width: 100%;
-            height: 150px;
-            object-fit: cover;
-            border: 1px solid #0ff;
-        }
-        
-        .delete-btn {
-            position: absolute;
-            top: 5px;
-            right: 5px;
-            background: #ff0044;
-            border: none;
-            color: white;
-            cursor: pointer;
-            padding: 2px 5px;
-        }
-        
-        .grid-container {
-            display: grid;
-            gap: 15px;
-            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        .screen-wrapper::after { /* Vignette & Color Bleed */
+            content: ""; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            background: radial-gradient(ellipse at center, rgba(0,255,100,0) 50%, rgba(0,255,50,0.1) 85%, rgba(0,0,0,0.5) 100%);
+            border-radius: 23px; pointer-events: none; z-index: 2; animation: flicker 0.15s infinite;
         }
 
-        @keyframes scan {
-            0% { transform: translateY(-100%); }
-            100% { transform: translateY(100%); }
+        /* --- Header & Footer --- */
+        .screen-header, .screen-footer {
+            flex-shrink: 0; border-bottom: 2px solid var(--pip-boy-green); padding: 5px 10px;
+            display: flex; justify-content: space-between; font-size: 1.5rem; animation: textGlow 2.5s infinite alternate;
         }
+        .screen-footer { border-bottom: none; border-top: 2px solid var(--pip-boy-green); margin-top: auto; }
 
-        @keyframes glow {
-            from { text-shadow: 0 0 5px #0ff; }
-            to { text-shadow: 0 0 20px #0ff, 0 0 10px #0ff; }
-        }
+        /* --- Main Content Area --- */
+        .main-content { flex-grow: 1; display: flex; padding: 10px 0; overflow: hidden; }
+        .nav-tabs { flex-shrink: 0; border-right: 2px solid var(--pip-boy-green); padding-right: 15px; margin-right: 15px; display: flex; flex-direction: column; gap: 10px; }
+        .tab { padding: 10px; font-size: 1.5rem; background: transparent; border: 2px solid transparent; transition: all 0.2s; display: flex; align-items: center; gap: 10px; }
+        .tab:hover, .tab.active { background: var(--pip-boy-green-t-heavy); border-color: var(--pip-boy-green); text-shadow: 0 0 8px var(--pip-boy-green); }
+        .tab-content { flex-grow: 1; position: relative; overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--pip-boy-green) transparent; }
+        
+        .content-section { display: none; animation: fadeIn 0.5s forwards; padding-right: 10px; }
+        .content-section.active { display: block; }
 
-        @media (max-width: 600px) {
-            .container {
-                margin: 10px;
-                padding: 10px;
-            }
+        /* --- Components --- */
+        .data-panel { border: 2px solid var(--pip-boy-green); padding: 15px; margin-bottom: 20px; background: var(--pip-boy-green-t); }
+        .grid-container { display: grid; gap: 15px; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
 
-            h1 {
-                font-size: 1.8em;
-            }
+        .item-card { border: 1px solid var(--pip-boy-green); padding: 10px; background: #00000030; position: relative; transition: all 0.2s ease; animation: textGlow 2.5s infinite alternate; }
+        .item-card:hover { transform: scale(1.02); box-shadow: 0 0 10px var(--pip-boy-green); }
+        .item-card h3 { margin: 10px 0 5px; } .item-card p { margin: 0; font-size: 0.9rem; color: #9effc4; }
+        .item-image { width: 100%; height: 100px; object-fit: cover; border: 1px solid var(--pip-boy-green); margin-bottom: 5px; background: #000; }
+        .item-stats { display: flex; justify-content: space-around; background: var(--pip-boy-bg); padding: 5px; margin-top: 10px; font-size: 0.9rem; }
+        
+        .quest-card.completed { opacity: 0.6; background: #00000080; }
+        .quest-card.completed h3 { text-decoration: line-through; }
+        .quest-objectives { list-style: none; padding-left: 10px; margin-top: 10px; }
+        .quest-objectives li { display: flex; align-items: center; gap: 8px; }
+        input[type="checkbox"] { appearance: none; width: 14px; height: 14px; border: 1px solid var(--pip-boy-green); background: var(--pip-boy-bg); position: relative; }
+        input[type="checkbox"]:checked::after { content: 'X'; position: absolute; top: -2px; left: 2px; }
+        progress { width: 100%; height: 8px; appearance: none; margin-top: 5px; }
+        progress::-webkit-progress-bar { background: var(--pip-boy-bg); border: 1px solid var(--pip-boy-green); }
+        progress::-webkit-progress-value { background: var(--pip-boy-green); }
 
-            input, button, textarea {
-                font-size: 1em;
-            }
-            
-            .grid-container {
-                grid-template-columns: 1fr;
-            }
+        .card-actions { position: absolute; top: 5px; right: 5px; display: flex; gap: 5px; }
+        .card-actions button { background: var(--pip-boy-bg); border: 1px solid var(--pip-boy-green); color: var(--pip-boy-green); width: 24px; height: 24px; font-size: 1rem; padding: 0; line-height: 1; }
+
+        /* --- Forms & Modals --- */
+        input, button, textarea { background: var(--pip-boy-bg); border: 1px solid var(--pip-boy-green); color: var(--pip-boy-green); padding: 8px; margin: 5px 0; width: 100%; font-size: 1.2rem; font-family: var(--font-main); transition: all 0.2s; }
+        input:focus, textarea:focus { outline: none; box-shadow: 0 0 10px var(--pip-boy-green); }
+        button { background: var(--pip-boy-green-t-heavy); } button:hover { background: var(--pip-boy-green); color: var(--pip-boy-bg); box-shadow: 0 0 15px var(--pip-boy-green); }
+        .add-button { font-size: 1.5rem; padding: 10px; margin-bottom: 20px; }
+        .form-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); z-index: 100; display: none; justify-content: center; align-items: center; animation: fadeIn 0.3s; }
+        .modal-content { width: 90%; max-width: 500px; padding: 20px; border: 3px solid var(--pip-boy-green); box-shadow: 0 0 20px var(--pip-boy-green); background: var(--pip-boy-bg); }
+        #objectives-container { margin-top: 10px; max-height: 150px; overflow-y: auto; }
+        .objective-item { display: flex; gap: 5px; margin-bottom: 5px; }
+        
+        /* --- STATUS Tab & Misc--- */
+        #status-ascii-art { white-space: pre; font-size: 10px; line-height: 1; text-align: center; margin: 10px 0; }
+        #boot-sequence { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 1000; padding: 20px; font-size: 1.5rem; white-space: pre-wrap; }
+        .cursor { position: fixed; top: -50px; left: -50px; width: 25px; height: 25px; border: 2px solid var(--pip-boy-green); border-radius: 50%; pointer-events: none; z-index: 9999; transition: transform 0.1s ease-out; }
+        #save-indicator { position: fixed; bottom: 20px; right: 20px; z-index: 100; font-size: 1.2rem; padding: 5px 10px; background: var(--pip-boy-green-t-heavy); border: 1px solid var(--pip-boy-green); opacity: 0; transition: opacity 0.5s; }
+
+        /* --- Animations & Responsive --- */
+        @keyframes scan { from { transform: translateY(-5%); } to { transform: translateY(5%); } }
+        @keyframes flicker { 0% { opacity: 0.9; } 50% { opacity: 1; } 100% { opacity: 0.9; } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes textGlow { from { text-shadow: 0 0 4px var(--pip-boy-green); } to { text-shadow: 0 0 8px var(--pip-boy-green); } }
+        
+        @media (max-width: 768px) {
+            .screen-wrapper { padding: 10px; border-radius: 15px; }
+            .screen-header, .screen-footer, .tab { font-size: 1.2rem; }
+            .main-content { flex-direction: column; }
+            .nav-tabs { flex-direction: row; border-right: none; border-bottom: 2px solid var(--pip-boy-green); padding: 0; margin: 0 0 10px 0; justify-content: space-around; }
+            .grid-container { grid-template-columns: 1fr; }
+            #status-ascii-art { font-size: 8px; }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="scanline"></div>
-        <h1 class="glow">CyberVambaPip 2077</h1>
-        
-        <div class="tabs">
-            <div class="tab active" onclick="switchTab('inventory')">ИНВЕНТАРЬ</div>
-            <div class="tab" onclick="switchTab('quests')">ЗАДАНИЯ</div>
-        </div>
+    <div class="pip-boy-container">
+        <div class="screen-wrapper">
+            <header class="screen-header">
+                <span>[ VAMBA-OS v2.78 ]</span>
+                <span id="system-time"></span>
+                <span>PLAYER: V</span>
+            </header>
 
-        <!-- Inventory Section -->
-        <div id="inventory" class="content-section active">
-            <div class="data-panel">
-                <h2>ДОБАВИТЬ ПРЕДМЕТ:</h2>
-                <input type="text" id="itemName" placeholder="Название предмета">
-                <textarea id="itemDesc" placeholder="Описание" rows="3"></textarea>
-                <input type="file" id="itemImage" accept="image/*">
-                <button onclick="addItem()">ДОБАВИТЬ</button>
-            </div>
-            
-            <div class="data-panel">
-                <h2>СОДЕРЖИМОЕ:</h2>
-                <div class="grid-container" id="inventoryItems"></div>
-            </div>
-        </div>
+            <main class="main-content">
+                <nav class="nav-tabs">
+                    <div class="tab active" data-tab="status"><span>&#x1F464;</span> STATUS</div>
+                    <div class="tab" data-tab="inventory"><span>&#x1F4BC;</span> INV</div>
+                    <div class="tab" data-tab="quests"><span>&#x2757;</span> QUESTS</div>
+                </nav>
 
-        <!-- Quests Section -->
-        <div id="quests" class="content-section">
-            <div class="data-panel">
-                <h2>НОВОЕ ЗАДАНИЕ:</h2>
-                <input type="text" id="questTitle" placeholder="Название задания">
-                <textarea id="questDesc" placeholder="Описание" rows="3"></textarea>
-                <button onclick="addQuest()">ДОБАВИТЬ</button>
-            </div>
-            
-            <div class="data-panel">
-                <h2>АКТИВНЫЕ ЗАДАНИЯ:</h2>
-                <div id="questsList"></div>
-            </div>
-        </div>
+                <div class="tab-content">
+                    <div id="status" class="content-section active">
+                        <div class="data-panel" style="text-align: center;"><h2>SYSTEM STATUS: <span style="animation: textGlow 1s infinite;">STABLE</span></h2><p>VITAL SIGNS NOMINAL. ALL SYSTEMS OPERATIONAL.</p></div>
+                        <div id="status-ascii-art"></div>
+                    </div>
+                    
+                    <div id="inventory" class="content-section">
+                        <button class="add-button" id="show-add-item-modal">ДОБАВИТЬ ПРЕДМЕТ</button>
+                        <div class="grid-container" id="inventoryItems"></div>
+                    </div>
+                    
+                    <div id="quests" class="content-section">
+                        <button class="add-button" id="show-add-quest-modal">ДОБАВИТЬ ЗАДАНИЕ</button>
+                        <div id="questsList"></div>
+                    </div>
+                </div>
+            </main>
 
-        <a href="map.html" id="map-link">>> ПЕРЕЙТИ К КАРТЕ <<</a>
+            <footer class="screen-footer">
+                <span>[ <a href="map.html" style="color: inherit; text-decoration: none;">>> КАРТА СИМУЛЯЦИЙ <<</a> ]</span>
+            </footer>
+        </div>
+    </div>
+    
+    <div id="item-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2>НОВЫЙ ПРЕДМЕТ</h2>
+            <input type="text" id="itemName" placeholder="Название предмета">
+            <textarea id="itemDesc" placeholder="Описание" rows="2"></textarea>
+            <div class="form-grid">
+                <input type="number" id="itemDmg" placeholder="DMG">
+                <input type="number" id="itemWgt" placeholder="WGT">
+                <input type="number" id="itemVal" placeholder="VAL">
+            </div>
+            <input type="file" id="itemImage" accept="image/*">
+            <button id="add-item-btn">ДОБАВИТЬ</button><button class="close-modal-btn">ОТМЕНА</button>
+        </div>
+    </div>
+    
+    <div id="quest-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2>НОВОЕ ЗАДАНИЕ</h2>
+            <input type="text" id="questTitle" placeholder="Название задания">
+            <textarea id="questDesc" placeholder="Описание" rows="2"></textarea>
+            <div id="objectives-container"></div>
+            <button id="add-objective-btn" style="margin-top: 10px;">+ Добавить цель</button>
+            <button id="add-quest-btn">ДОБАВИТЬ</button><button class="close-modal-btn">ОТМЕНА</button>
+        </div>
     </div>
 
+    <div id="boot-sequence"></div>
+    <div class="cursor"></div>
+    <div id="save-indicator">DATA SAVED</div>
+    
+    <audio id="audio-ambient" src="https://www.soundjay.com/ambient/sounds/machine-room-1.mp3" loop></audio>
+    <audio id="audio-hover" src="https://www.soundjay.com/buttons/sounds/button-4.mp3"></audio>
+    <audio id="audio-click" src="https://www.soundjay.com/buttons/sounds/button-21.mp3"></audio>
+    <audio id="audio-tab" src="https://www.soundjay.com/buttons/sounds/button-7.mp3"></audio>
+
     <script>
-        // Tab switching
-        function switchTab(tabName) {
-            document.querySelectorAll('.tab, .content-section').forEach(el => {
-                el.classList.remove('active');
-            });
-            document.getElementById(tabName).classList.add('active');
-            event.target.classList.add('active');
-        }
+        document.addEventListener('DOMContentLoaded', () => {
+            const PipBoy = {
+                state: { inventory: [], quests: [], activeTab: 'status' },
+                dom: {}, // Will be populated in init
+                audio: {}, // Will be populated in init
 
-        // Inventory System
-        let inventory = JSON.parse(localStorage.getItem('inventory')) || [];
-        let quests = JSON.parse(localStorage.getItem('quests')) || [];
+                init() {
+                    this.cacheDom();
+                    this.initAudio();
+                    this.utils.loadState();
+                    this.render.time();
+                    setInterval(() => this.render.time(), 1000);
+                    this.render.statusArt();
+                    this.render.all();
+                    this.utils.runBootSequence();
+                    this.utils.setupEventListeners();
+                    console.log("CyberVambaPip 2077 v2 Initialized.");
+                },
 
-        function addItem() {
-            const name = document.getElementById('itemName').value;
-            const desc = document.getElementById('itemDesc').value;
-            const file = document.getElementById('itemImage').files[0];
-            
-            if(!name || !desc) return;
-            
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const newItem = {
-                    id: Date.now(),
-                    name,
-                    desc,
-                    image: e.target.result
-                };
+                cacheDom() {
+                    this.dom = {
+                        time: document.getElementById('system-time'),
+                        tabs: document.querySelectorAll('.tab'),
+                        contentSections: document.querySelectorAll('.content-section'),
+                        inventoryContainer: document.getElementById('inventoryItems'),
+                        questsContainer: document.getElementById('questsList'),
+                        bootSequence: document.getElementById('boot-sequence'),
+                        statusAscii: document.getElementById('status-ascii-art'),
+                        cursor: document.querySelector('.cursor'),
+                        saveIndicator: document.getElementById('save-indicator'),
+                        itemModal: document.getElementById('item-modal'),
+                        questModal: document.getElementById('quest-modal'),
+                        objectivesContainer: document.getElementById('objectives-container'),
+                    };
+                },
+
+                initAudio() {
+                    this.audio = {
+                        ambient: document.getElementById('audio-ambient'), hover: document.getElementById('audio-hover'),
+                        click: document.getElementById('audio-click'), tab: document.getElementById('audio-tab'),
+                        play(soundId) { const sound = this[soundId]; if (sound) { sound.currentTime = 0; sound.play(); }},
+                        startAmbient() {
+                            this.ambient.volume = 0.1; this.hover.volume = 0.3; this.click.volume = 0.5; this.tab.volume = 0.4;
+                            const start = () => { this.ambient.play().catch(e => {}); document.body.removeEventListener('click', start); };
+                            document.body.addEventListener('click', start);
+                        }
+                    };
+                    this.audio.startAmbient();
+                },
+
+                render: {
+                    all() { this.tabs(); this.inventory(); this.quests(); },
+                    time() { PipBoy.dom.time.textContent = new Date().toLocaleTimeString(); },
+                    tabs() {
+                        PipBoy.dom.contentSections.forEach(s => s.classList.remove('active'));
+                        document.getElementById(PipBoy.state.activeTab).classList.add('active');
+                        PipBoy.dom.tabs.forEach(t => t.classList.toggle('active', t.dataset.tab === PipBoy.state.activeTab));
+                    },
+                    inventory() {
+                        PipBoy.dom.inventoryContainer.innerHTML = PipBoy.state.inventory.map(item => `
+                            <div class="item-card">
+                                <div class="card-actions"><button data-action="delete-item" data-id="${item.id}">X</button></div>
+                                <img src="${item.image || 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs='}" class="item-image" alt="${item.name}">
+                                <h3>${item.name}</h3>
+                                <p>${item.desc}</p>
+                                <div class="item-stats">
+                                    <span>DMG: ${item.stats.dmg || 0}</span>
+                                    <span>WGT: ${item.stats.wgt || 0}</span>
+                                    <span>VAL: ${item.stats.val || 0}</span>
+                                </div>
+                            </div>`).join('');
+                    },
+                    quests() {
+                        PipBoy.dom.questsContainer.innerHTML = PipBoy.state.quests.map(quest => {
+                            const total = quest.objectives.length;
+                            const completed = quest.objectives.filter(o => o.done).length;
+                            return `
+                            <div class="item-card quest-card ${quest.completed ? 'completed' : ''}">
+                                <div class="card-actions">
+                                     <button data-action="delete-quest" data-id="${quest.id}">X</button>
+                                </div>
+                                <h3>${quest.title}</h3>
+                                <p>${quest.desc}</p>
+                                ${total > 0 ? `
+                                <ul class="quest-objectives">${quest.objectives.map((obj, i) => `
+                                    <li><input type="checkbox" data-action="toggle-objective" data-quest-id="${quest.id}" data-obj-index="${i}" ${obj.done ? 'checked' : ''}> ${obj.text}</li>`
+                                ).join('')}</ul>
+                                <progress value="${completed}" max="${total}"></progress>` : ''}
+                            </div>`;
+                        }).join('');
+                    },
+                    statusArt() {
+                        const baseArt = ["    /\\", "   /  \\", "  /----\\", " ( o><o )", "  \\ -- /", "  /`--`\\", " /      \\", "| |----| |", "| |VAMB| |", " \\/----\\/", "  `----` "];
+                        setInterval(() => {
+                            let art = [...baseArt];
+                            const line = Math.floor(Math.random() * art.length);
+                            const char = Math.floor(Math.random() * art[line].length);
+                            art[line] = art[line].substring(0, char) + ['*','+','#'][Math.floor(Math.random()*3)] + art[line].substring(char + 1);
+                            PipBoy.dom.statusAscii.textContent = art.join('\n');
+                        }, 200);
+                    },
+                    objectivesInModal() {
+                        const container = PipBoy.dom.objectivesContainer;
+                        container.innerHTML = Array.from({ length: container.dataset.count || 0 }).map((_, i) =>
+                            `<div class="objective-item"><input type="text" placeholder="Objective ${i + 1}" class="objective-input"><button data-action="remove-objective" data-index="${i}">-</button></div>`
+                        ).join('');
+                        container.querySelectorAll('[data-action="remove-objective"]').forEach(btn => btn.addEventListener('click', PipBoy.utils.handleRemoveObjective));
+                    }
+                },
                 
-                inventory.push(newItem);
-                localStorage.setItem('inventory', JSON.stringify(inventory));
-                renderInventory();
-                clearItemForm();
+                utils: {
+                    saveState() {
+                        localStorage.setItem('pipboy_inventory', JSON.stringify(PipBoy.state.inventory));
+                        localStorage.setItem('pipboy_quests', JSON.stringify(PipBoy.state.quests));
+                        PipBoy.dom.saveIndicator.style.opacity = 1;
+                        setTimeout(() => PipBoy.dom.saveIndicator.style.opacity = 0, 1000);
+                    },
+                    loadState() {
+                        PipBoy.state.inventory = JSON.parse(localStorage.getItem('pipboy_inventory')) || [];
+                        PipBoy.state.quests = JSON.parse(localStorage.getItem('pipboy_quests')) || [];
+                    },
+                    runBootSequence() {
+                        const lines = ["VAMBA-OS v2.78 (c) 2077 VAMBA-TEK", "Initializing...", "Memory: 64KB OK", "Neuro-link... [CONNECTED]", "Welcome, V."];
+                        let text = '', lineIdx = 0, charIdx = 0;
+                        const type = () => {
+                            if (lineIdx < lines.length) {
+                                text += lines[lineIdx][charIdx++];
+                                PipBoy.dom.bootSequence.textContent = text;
+                                if (charIdx === lines[lineIdx].length) { text += '\n'; lineIdx++; charIdx = 0; }
+                                setTimeout(type, 30);
+                            } else {
+                                setTimeout(() => { PipBoy.dom.bootSequence.style.display = 'none'; }, 500);
+                            }
+                        }; type();
+                    },
+                    setupEventListeners() {
+                        PipBoy.dom.tabs.forEach(tab => tab.addEventListener('click', () => { PipBoy.audio.play('tab'); PipBoy.state.activeTab = tab.dataset.tab; PipBoy.render.tabs(); }));
+                        document.getElementById('show-add-item-modal').addEventListener('click', () => { PipBoy.audio.play('click'); PipBoy.dom.itemModal.style.display = 'flex'; });
+                        document.getElementById('show-add-quest-modal').addEventListener('click', () => { PipBoy.audio.play('click'); PipBoy.dom.objectivesContainer.dataset.count = 0; PipBoy.render.objectivesInModal(); PipBoy.dom.questModal.style.display = 'flex'; });
+                        document.querySelectorAll('.close-modal-btn').forEach(btn => btn.addEventListener('click', () => { PipBoy.audio.play('click'); btn.closest('.modal-overlay').style.display = 'none'; }));
+                        document.getElementById('add-item-btn').addEventListener('click', this.handleAddItem);
+                        document.getElementById('add-quest-btn').addEventListener('click', this.handleAddQuest);
+                        document.getElementById('add-objective-btn').addEventListener('click', this.handleAddObjective);
+
+                        PipBoy.dom.contentSections.forEach(s => s.addEventListener('click', e => {
+                            const target = e.target; const { action } = target.dataset; if (!action) return;
+                            PipBoy.audio.play('click');
+                            if (action === 'delete-item') { PipBoy.state.inventory = PipBoy.state.inventory.filter(i => i.id !== +target.dataset.id); PipBoy.render.inventory(); }
+                            if (action === 'delete-quest') { PipBoy.state.quests = PipBoy.state.quests.filter(q => q.id !== +target.dataset.id); PipBoy.render.quests(); }
+                            if (action === 'toggle-objective') {
+                                const quest = PipBoy.state.quests.find(q => q.id === +target.dataset.questId);
+                                if (quest) {
+                                    quest.objectives[target.dataset.objIndex].done = target.checked;
+                                    quest.completed = quest.objectives.every(o => o.done);
+                                }
+                                PipBoy.render.quests();
+                            }
+                            this.saveState();
+                        }));
+
+                        document.addEventListener('mousemove', e => PipBoy.dom.cursor.style.transform = `translate(${e.clientX - 12.5}px, ${e.clientY - 12.5}px)`);
+                        document.querySelectorAll('button, .tab, a, input[type=checkbox]').forEach(el => el.addEventListener('mouseenter', () => PipBoy.audio.play('hover')));
+                    },
+
+                    handleAddItem() {
+                        const name = document.getElementById('itemName').value, desc = document.getElementById('itemDesc').value;
+                        if (!name || !desc) return;
+                        const stats = { dmg: +document.getElementById('itemDmg').value, wgt: +document.getElementById('itemWgt').value, val: +document.getElementById('itemVal').value };
+                        const file = document.getElementById('itemImage').files[0];
+                        const process = (image) => {
+                             PipBoy.state.inventory.push({ id: Date.now(), name, desc, image, stats });
+                             this.saveState(); PipBoy.render.inventory(); PipBoy.audio.play('click');
+                             PipBoy.dom.itemModal.querySelector('form')?.reset(); PipBoy.dom.itemModal.style.display = 'none';
+                        };
+                        if (file) { const reader = new FileReader(); reader.onload = e => process(e.target.result); reader.readAsDataURL(file); } else { process(null); }
+                    },
+                    handleAddQuest() {
+                        const title = document.getElementById('questTitle').value, desc = document.getElementById('questDesc').value; if (!title || !desc) return;
+                        const objectives = Array.from(PipBoy.dom.objectivesContainer.querySelectorAll('.objective-input')).map(input => ({ text: input.value, done: false })).filter(o => o.text);
+                        PipBoy.state.quests.push({ id: Date.now(), title, desc, completed: false, objectives });
+                        this.saveState(); PipBoy.render.quests(); PipBoy.audio.play('click');
+                        PipBoy.dom.questModal.querySelector('form')?.reset(); PipBoy.dom.questModal.style.display = 'none';
+                    },
+                    handleAddObjective() {
+                        PipBoy.audio.play('click');
+                        const container = PipBoy.dom.objectivesContainer;
+                        container.dataset.count = (+container.dataset.count || 0) + 1;
+                        PipBoy.render.objectivesInModal();
+                    },
+                    handleRemoveObjective(e) {
+                        PipBoy.audio.play('click');
+                        const container = PipBoy.dom.objectivesContainer;
+                        container.dataset.count = Math.max(0, (+container.dataset.count || 0) - 1);
+                        e.target.closest('.objective-item').remove();
+                        PipBoy.render.objectivesInModal(); // Re-render to fix indices if needed, though simple removal is fine here
+                    }
+                }
             };
-            
-            file ? reader.readAsDataURL(file) : addItemWithoutImage();
-        }
-
-        function addItemWithoutImage() {
-            const newItem = {
-                id: Date.now(),
-                name: document.getElementById('itemName').value,
-                desc: document.getElementById('itemDesc').value,
-                image: null
-            };
-            
-            inventory.push(newItem);
-            localStorage.setItem('inventory', JSON.stringify(inventory));
-            renderInventory();
-            clearItemForm();
-        }
-
-        function deleteItem(id) {
-            inventory = inventory.filter(item => item.id !== id);
-            localStorage.setItem('inventory', JSON.stringify(inventory));
-            renderInventory();
-        }
-
-        function renderInventory() {
-            const container = document.getElementById('inventoryItems');
-            container.innerHTML = inventory.map(item => `
-                <div class="item-card">
-                    <button class="delete-btn" onclick="deleteItem(${item.id})">X</button>
-                    ${item.image ? `<img src="${item.image}" class="item-image">` : ''}
-                    <h3>${item.name}</h3>
-                    <p>${item.desc}</p>
-                </div>
-            `).join('');
-        }
-
-        // Quest System
-        function addQuest() {
-            const title = document.getElementById('questTitle').value;
-            const desc = document.getElementById('questDesc').value;
-            
-            if(!title || !desc) return;
-            
-            const newQuest = {
-                id: Date.now(),
-                title,
-                desc
-            };
-            
-            quests.push(newQuest);
-            localStorage.setItem('quests', JSON.stringify(quests));
-            renderQuests();
-            clearQuestForm();
-        }
-
-        function deleteQuest(id) {
-            quests = quests.filter(quest => quest.id !== id);
-            localStorage.setItem('quests', JSON.stringify(quests));
-            renderQuests();
-        }
-
-        function renderQuests() {
-            const container = document.getElementById('questsList');
-            container.innerHTML = quests.map(quest => `
-                <div class="item-card">
-                    <button class="delete-btn" onclick="deleteQuest(${quest.id})">X</button>
-                    <h3>${quest.title}</h3>
-                    <p>${quest.desc}</p>
-                </div>
-            `).join('');
-        }
-
-        // Helpers
-        function clearItemForm() {
-            document.getElementById('itemName').value = '';
-            document.getElementById('itemDesc').value = '';
-            document.getElementById('itemImage').value = '';
-        }
-
-        function clearQuestForm() {
-            document.getElementById('questTitle').value = '';
-            document.getElementById('questDesc').value = '';
-        }
-
-        // Initial render
-        window.onload = () => {
-            renderInventory();
-            renderQuests();
-        }
+            PipBoy.init();
+        });
     </script>
 </body>
 </html>
