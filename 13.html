@@ -10,10 +10,19 @@
   <link href="https://fonts.googleapis.com/css2?family=Exo+2:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
   <style>
     :root {
-      --primary-glow: #3b82f6;
-      --secondary-glow: #8b5cf6;
-      --card-bg: rgba(17, 24, 39, 0.7);
+      --primary-glow: #0ea5e9; /* Sky Blue */
+      --secondary-glow: #be185d; /* Pink */
+      --accent-glow: #059669; /* Emerald */
+      --card-bg: rgba(10, 15, 25, 0.75);
+      --border-color: rgba(5, 150, 105, 0.4);
     }
+    
+    @property --angle {
+      syntax: '<angle>';
+      initial-value: 0deg;
+      inherits: false;
+    }
+
     body {
       margin: 0;
       overflow: hidden;
@@ -37,7 +46,7 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      background: rgba(0, 0, 0, 0.7);
+      background: rgba(0, 0, 0, 0.8);
       color: white;
       text-align: center;
       cursor: pointer;
@@ -45,30 +54,36 @@
       transition: opacity 0.5s;
     }
     #overlay h1 {
-        font-size: 4rem;
-        font-weight: 800;
+        font-size: 5rem;
+        font-weight: 900;
         text-transform: uppercase;
-        letter-spacing: 0.1em;
-        text-shadow: 0 0 15px var(--primary-glow), 0 0 30px var(--primary-glow);
-        animation: glitch 2.5s linear infinite;
+        letter-spacing: 0.15em;
+        text-shadow: 0 0 10px var(--primary-glow), 0 0 20px var(--primary-glow), 0 0 40px var(--primary-glow), 0 0 80px black;
+        animation: glitch 3s linear infinite, text-glow 2.5s ease-in-out infinite alternate;
     }
     #overlay p {
         margin-top: 1rem;
         font-size: 1.2rem;
+        text-shadow: 0 0 5px black;
     }
     kbd {
         display: inline-block;
-        padding: 0.2rem 0.5rem;
-        background-color: rgba(255, 255, 255, 0.1);
-        border: 1px solid rgba(255,255,255,0.2);
-        border-radius: 4px;
+        padding: 0.3rem 0.6rem;
+        background-color: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255,255,255,0.15);
+        border-radius: 6px;
         font-family: monospace;
         font-weight: bold;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
     }
     @keyframes glitch {
       2%,64% { transform: translate(2px,0) skew(0deg); }
       4%,60% { transform: translate(-2px,0) skew(0deg); }
       62% { transform: translate(0,0) skew(5deg); }
+    }
+    @keyframes text-glow {
+        from { text-shadow: 0 0 10px var(--primary-glow), 0 0 20px var(--primary-glow), 0 0 40px var(--primary-glow), 0 0 80px black; }
+        to { text-shadow: 0 0 5px var(--primary-glow), 0 0 10px var(--primary-glow), 0 0 20px var(--accent-glow), 0 0 80px black; }
     }
     .hud {
         position: fixed;
@@ -78,33 +93,75 @@
         height: 100%;
         z-index: 10;
     }
+    .hud::after { /* Vignette effect */
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      box-shadow: inset 0 0 150px rgba(0,0,0,0.7);
+      pointer-events: none;
+    }
     .crosshair {
         position: absolute;
         top: 50%;
         left: 50%;
-        width: 4px;
-        height: 4px;
-        background-color: rgba(255, 255, 255, 0.5);
+        width: 24px;
+        height: 24px;
+        transform: translate(-50%, -50%);
+        opacity: 0.6;
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    .crosshair::before, .crosshair::after {
+        content: '';
+        position: absolute;
+        background: var(--accent-glow);
+        box-shadow: 0 0 5px var(--accent-glow);
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    .crosshair::before {
+        top: 50%; left: 50%;
+        width: 4px; height: 4px;
         border-radius: 50%;
         transform: translate(-50%, -50%);
-        transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    .crosshair::after {
+        top: 0; left: 0; width: 100%; height: 100%;
+        background: transparent;
+        border: 1px solid white;
+        border-radius: 50%;
+        opacity: 0.3;
+        transform: scale(1);
+        box-shadow: none;
     }
     .crosshair.interactive {
-        transform: translate(-50%, -50%) scale(2.5);
-        background-color: rgba(139, 92, 246, 0.9);
+        transform: translate(-50%, -50%) rotate(180deg);
+        opacity: 1;
     }
+    .crosshair.interactive::before {
+        transform: translate(-50%, -50%) scale(1.5);
+        background: #fff;
+        box-shadow: 0 0 10px #fff, 0 0 20px var(--accent-glow);
+    }
+    .crosshair.interactive::after {
+        transform: scale(0.8);
+        opacity: 1;
+        border-color: var(--accent-glow);
+        box-shadow: 0 0 10px var(--accent-glow);
+    }
+
     .interaction-prompt {
         position: absolute;
         bottom: 10%;
         left: 50%;
         transform: translateX(-50%);
-        background-color: rgba(0,0,0,0.5);
-        padding: 0.5rem 1rem;
+        background-color: rgba(0,0,0,0.6);
+        backdrop-filter: blur(5px);
+        padding: 0.75rem 1.5rem;
         border-radius: 8px;
         font-size: 1rem;
         opacity: 0;
         transition: opacity 0.3s;
-        border: 1px solid rgba(255,255,255,0.2);
+        border: 1px solid var(--border-color);
+        box-shadow: 0 0 20px rgba(5, 150, 105, 0.3);
     }
     .interaction-prompt.visible {
         opacity: 1;
@@ -132,8 +189,8 @@
     }
     .modal-content {
         background-color: var(--card-bg);
-        backdrop-filter: blur(12px);
-        border: 1px solid var(--secondary-glow);
+        backdrop-filter: blur(16px);
+        border: 1px solid var(--border-color);
         border-radius: 12px;
         width: 90%;
         max-width: 800px;
@@ -143,32 +200,37 @@
         overflow-y: auto;
         transform: scale(0.95);
         transition: transform 0.3s ease;
-        box-shadow: 0 0 40px rgba(139, 92, 246, 0.3);
+        box-shadow: 0 0 60px rgba(190, 24, 93, 0.3), 0 0 30px rgba(14, 165, 233, 0.3), inset 0 0 25px rgba(5, 150, 105, 0.2);
         position: relative;
         overflow-x: hidden;
+    }
+    .modal-content::before {
+        content: '';
+        position: absolute;
+        inset: -1px;
+        border-radius: 13px;
+        background: conic-gradient(from var(--angle), transparent 30%, var(--accent-glow), var(--secondary-glow), transparent 70%);
+        animation: rotate 4s linear infinite;
+        z-index: -1;
     }
     .modal-content::after {
         content: '';
         position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(to bottom, rgba(255,255,255,0) 0%, rgba(255,255,255,0.03) 50%, rgba(255,255,255,0) 100%);
-        background-size: 100% 4px;
-        animation: scanlines 10s linear infinite;
+        top: 0; left: 0; width: 100%; height: 100%;
+        background: linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+        background-size: 30px 30px;
         pointer-events: none;
+        opacity: 0.3;
     }
-    @keyframes scanlines {
-        from { background-position: 0 0; }
-        to { background-position: 0 -40px; }
-    }
+    
+    @keyframes rotate { to { --angle: 360deg; } }
+
     .modal-container.visible .modal-content {
         transform: scale(1);
     }
-    .modal-content::-webkit-scrollbar { width: 6px; }
+    .modal-content::-webkit-scrollbar { width: 8px; }
     .modal-content::-webkit-scrollbar-track { background: transparent; }
-    .modal-content::-webkit-scrollbar-thumb { background: var(--secondary-glow); border-radius: 3px; }
+    .modal-content::-webkit-scrollbar-thumb { background: var(--secondary-glow); border-radius: 4px; border: 1px solid var(--accent-glow); }
 
     .modal-close-btn {
         position: absolute;
@@ -184,25 +246,31 @@
         cursor: pointer;
     }
     .modal-close-btn:hover {
-        background: var(--secondary-glow);
+        background: var(--accent-glow);
+        color: #000;
         transform: rotate(90deg);
+        box-shadow: 0 0 15px var(--accent-glow);
     }
     .section-title {
-        background: linear-gradient(90deg, #fff, #aaa);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        filter: drop-shadow(0 0 10px var(--primary-glow));
-        font-size: 2.5rem;
-        font-weight: bold;
+        font-size: 2.8rem;
+        font-weight: 800;
         text-align: center;
         margin-bottom: 2rem;
+        color: #fff;
+        text-shadow: 0 0 5px var(--primary-glow), 0 0 10px var(--primary-glow);
     }
     .card {
-        background: rgba(255,255,255,0.05);
+        background: rgba(255,255,255,0.02);
         border-radius: 8px;
         padding: 1.5rem;
         margin-bottom: 1rem;
-        border: 1px solid rgba(255,255,255,0.1);
+        border: 1px solid var(--border-color);
+        transition: all 0.3s ease;
+    }
+    .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 5px 25px rgba(5, 150, 105, 0.2);
+        border-color: rgba(5, 150, 105, 0.7);
     }
      .get-difficulty-class {
         padding: 0.25rem 0.75rem;
@@ -212,20 +280,22 @@
         display: inline-block;
         white-space: nowrap;
      }
-    .difficulty-Новичок { background-color: rgba(74, 222, 128, 0.2); color: #86efac; border: 1px solid rgba(74, 222, 128, 0.3); }
-    .difficulty-Средний { background-color: rgba(96, 165, 250, 0.2); color: #93c5fd; border: 1px solid rgba(96, 165, 250, 0.3); }
-    .difficulty-Продвинутый, .difficulty-Средний\/Продвинутый { background-color: rgba(248, 113, 113, 0.2); color: #fca5a5; border: 1px solid rgba(248, 113, 113, 0.3); }
-    .difficulty-Все, .difficulty-Все_уровни { background-color: rgba(139, 92, 246, 0.2); color: #c4b5fd; border: 1px solid rgba(139, 92, 246, 0.3); }
+    .difficulty-Новичок { background-color: rgba(74, 222, 128, 0.2); color: #86efac; border: 1px solid rgba(74, 222, 128, 0.3); text-shadow: 0 0 5px rgba(74, 222, 128, 0.5); }
+    .difficulty-Средний { background-color: rgba(96, 165, 250, 0.2); color: #93c5fd; border: 1px solid rgba(96, 165, 250, 0.3); text-shadow: 0 0 5px rgba(96, 165, 250, 0.5); }
+    .difficulty-Продвинутый, .difficulty-Средний\/Продвинутый { background-color: rgba(248, 113, 113, 0.2); color: #fca5a5; border: 1px solid rgba(248, 113, 113, 0.3); text-shadow: 0 0 5px rgba(248, 113, 113, 0.5); }
+    .difficulty-Все, .difficulty-Все_уровни { background-color: rgba(139, 92, 246, 0.2); color: #c4b5fd; border: 1px solid rgba(139, 92, 246, 0.3); text-shadow: 0 0 5px rgba(139, 92, 246, 0.5); }
 
     .css2d-label {
         color: #fff;
         font-size: 24px;
-        font-weight: 600;
-        padding: 10px;
+        font-weight: 700;
+        padding: 10px 15px;
         background: rgba(0, 0, 0, 0.6);
         border-radius: 5px;
-        text-shadow: 0 0 5px var(--secondary-glow);
+        border: 1px solid var(--border-color);
+        text-shadow: 0 0 8px var(--accent-glow);
         pointer-events: none;
+        backdrop-filter: blur(4px);
     }
     .hidden { display: none !important; }
 
@@ -235,9 +305,10 @@
         position: absolute;
         width: 150px;
         height: 150px;
-        background: rgba(255, 255, 255, 0.1);
+        background: rgba(255, 255, 255, 0.05);
         border-radius: 50%;
-        border: 2px solid rgba(255, 255, 255, 0.2);
+        border: 2px solid rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(5px);
         pointer-events: auto;
     }
     .joystick-handle {
@@ -246,7 +317,7 @@
         left: 50%;
         width: 60px;
         height: 60px;
-        background: rgba(255, 255, 255, 0.3);
+        background: rgba(255, 255, 255, 0.2);
         border-radius: 50%;
         transform: translate(-50%, -50%);
         transition: transform 0.1s;
@@ -255,8 +326,8 @@
         width: 60px;
         height: 60px;
         border-radius: 50%;
-        background: rgba(255, 255, 255, 0.2);
-        border: 2px solid rgba(255, 255, 255, 0.3);
+        background: rgba(255, 255, 255, 0.1);
+        border: 2px solid rgba(255, 255, 255, 0.2);
         color: white;
         font-size: 24px;
         font-weight: bold;
@@ -266,9 +337,10 @@
         pointer-events: auto;
         user-select: none;
         -webkit-user-select: none;
+        backdrop-filter: blur(5px);
     }
     .mobile-btn:active {
-        background: rgba(255, 255, 255, 0.4);
+        background: rgba(255, 255, 255, 0.3);
     }
     .interact-btn-main {
         position: absolute;
@@ -280,9 +352,10 @@
         border-radius: 30px;
         font-size: 16px;
         font-weight: 600;
-        background-color: var(--secondary-glow);
+        background-color: var(--accent-glow);
+        color: #000;
         border: none;
-        box-shadow: 0 0 20px var(--secondary-glow);
+        box-shadow: 0 0 20px var(--accent-glow);
     }
     .interact-btn-main.hidden {
       display: none;
@@ -294,8 +367,8 @@
         left: 0;
         width: 100%;
         height: 100%;
-        border: 4px dashed rgba(255, 255, 255, 0.7);
-        background: rgba(0, 0, 0, 0.5);
+        border: 4px dashed var(--accent-glow);
+        background: rgba(5, 150, 105, 0.1);
         z-index: 999;
         display: flex;
         align-items: center;
@@ -382,6 +455,7 @@
     import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
     import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
     import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+    import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
     import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
     import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
     import { CSS3DRenderer, CSS3DObject } from 'three/addons/renderers/CSS3DRenderer.js';
@@ -390,15 +464,20 @@
 
     // --- Scene Setup ---
     const scene = new THREE.Scene();
-    scene.fog = new THREE.FogExp2(0x000000, 0.0025);
-    const ambientLight = new THREE.AmbientLight(0x404040, 2.0); // soft white light
+    scene.fog = new THREE.Fog(0x0a0a1a, 200, 1200);
+    const ambientLight = new THREE.AmbientLight(0x404040, 1.0);
     scene.add(ambientLight);
+    
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
-    camera.position.z = 10;
-    const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('webgl-canvas'), antialias: true });
+    camera.position.set(0, 5, 20);
+
+    const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('webgl-canvas'), antialias: true, powerPreference: "high-performance" });
     renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5)); // Optimization: Cap pixel ratio
-    renderer.toneMapping = THREE.ReinhardToneMapping;
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.0;
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
     // --- CSS Renderers ---
     const labelRenderer = new CSS2DRenderer();
@@ -415,16 +494,34 @@
     css3dRenderer.domElement.style.top = '0px';
     document.body.insertBefore(css3dRenderer.domElement, renderer.domElement);
 
-
-    // --- Post-processing (Bloom) ---
-    const renderScene = new RenderPass(scene, camera);
-    const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
-    bloomPass.threshold = 0;
-    bloomPass.strength = 0.9; // Optimization: Reduced bloom strength
-    bloomPass.radius = 0.4; // Optimization: Reduced bloom radius
+    // --- Post-processing ---
     const composer = new EffectComposer(renderer);
-    composer.addPass(renderScene);
+    composer.addPass(new RenderPass(scene, camera));
+
+    const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
+    bloomPass.threshold = 0.9;
+    bloomPass.strength = 0.7; 
+    bloomPass.radius = 1.2;
     composer.addPass(bloomPass);
+
+    const finalShader = {
+      uniforms: {
+        tDiffuse: { value: null }, uTime: { value: 0 }, uAberrationAmount: { value: 0.001 }
+      },
+      vertexShader: `varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 ); }`,
+      fragmentShader: `
+        uniform sampler2D tDiffuse; uniform float uTime; uniform float uAberrationAmount; varying vec2 vUv;
+        float rand(vec2 n) { return fract(sin(dot(n, vec2(12.9898, 4.1414))) * 43758.5453)); }
+        void main() {
+          vec2 R_uv = vUv + vec2(uAberrationAmount, 0.0); vec2 B_uv = vUv - vec2(uAberrationAmount, 0.0);
+          float R = texture2D(tDiffuse, R_uv).r; float G = texture2D(tDiffuse, vUv).g; float B = texture2D(tDiffuse, B_uv).b;
+          vec3 finalColor = vec3(R, G, B);
+          float grainAmount = 0.03; finalColor += mix(-grainAmount, grainAmount, rand(vUv * uTime));
+          gl_FragColor = vec4(finalColor, 1.0);
+        }`
+    };
+    const finalPass = new ShaderPass(finalShader);
+    composer.addPass(finalPass);
 
     // --- Controls ---
     let controls;
@@ -457,37 +554,28 @@
         }
     });
 
-
     // --- Movement ---
     const velocity = new THREE.Vector3();
     const direction = new THREE.Vector3();
     let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false, moveUp = false, moveDown = false;
     let cameraLookSpeed = { x: 0, y: 0 };
+    const playerEyeHeight = 1.8;
     
     const onKeyDown = (event) => {
-      if (isTerminalActive) {
-        if (event.code === 'Escape') deactivateTerminal();
-        return;
-      }
+      if (isTerminalActive) { if (event.code === 'Escape') deactivateTerminal(); return; }
       switch (event.code) {
-        case 'KeyW': case 'ArrowUp': moveForward = true; break;
-        case 'KeyA': case 'ArrowLeft': moveLeft = true; break;
-        case 'KeyS': case 'ArrowDown': moveBackward = true; break;
-        case 'KeyD': case 'ArrowRight': moveRight = true; break;
-        case 'Space': moveUp = true; break;
-        case 'ShiftLeft': case 'KeyC': moveDown = true; break;
+        case 'KeyW': case 'ArrowUp': moveForward = true; break; case 'KeyA': case 'ArrowLeft': moveLeft = true; break;
+        case 'KeyS': case 'ArrowDown': moveBackward = true; break; case 'KeyD': case 'ArrowRight': moveRight = true; break;
+        case 'Space': moveUp = true; break; case 'ShiftLeft': case 'KeyC': moveDown = true; break;
         case 'KeyE': if (intersectedObject) openModalForObject(intersectedObject); break;
         case 'Escape': if (modalContainer.classList.contains('visible')) closeModal(); else if (!isMobile) controls.unlock(); break;
       }
     };
     const onKeyUp = (event) => {
       switch (event.code) {
-        case 'KeyW': case 'ArrowUp': moveForward = false; break;
-        case 'KeyA': case 'ArrowLeft': moveLeft = false; break;
-        case 'KeyS': case 'ArrowDown': moveBackward = false; break;
-        case 'KeyD': case 'ArrowRight': moveRight = false; break;
-        case 'Space': moveUp = false; break;
-        case 'ShiftLeft': case 'KeyC': moveDown = false; break;
+        case 'KeyW': case 'ArrowUp': moveForward = false; break; case 'KeyA': case 'ArrowLeft': moveLeft = false; break;
+        case 'KeyS': case 'ArrowDown': moveBackward = false; break; case 'KeyD': case 'ArrowRight': moveRight = false; break;
+        case 'Space': moveUp = false; break; case 'ShiftLeft': case 'KeyC': moveDown = false; break;
       }
     };
     document.addEventListener('keydown', onKeyDown);
@@ -495,601 +583,358 @@
 
     // --- Mobile Touch Controls ---
     if (isMobile) {
-        const moveStick = document.getElementById('joystick-move-handle');
-        const moveZone = document.getElementById('joystick-move-zone');
-        const upBtn = document.getElementById('move-up-btn');
-        const downBtn = document.getElementById('move-down-btn');
+        const moveStick = document.getElementById('joystick-move-handle'); const moveZone = document.getElementById('joystick-move-zone');
+        const upBtn = document.getElementById('move-up-btn'); const downBtn = document.getElementById('move-down-btn');
         const interactBtn = document.getElementById('interact-btn');
-
-        let moveTouchId = -1;
-        let lookTouchId = -1;
-        let lookStart = { x: 0, y: 0 };
+        let moveTouchId = -1, lookTouchId = -1; let lookStart = { x: 0, y: 0 };
         const moveStickRadius = moveZone.offsetWidth / 2;
-
-        moveZone.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            moveTouchId = e.changedTouches[0].identifier;
-        }, { passive: false });
-        
+        moveZone.addEventListener('touchstart', (e) => { e.preventDefault(); moveTouchId = e.changedTouches[0].identifier; }, { passive: false });
         document.addEventListener('touchmove', (e) => {
             e.preventDefault();
             for(let i=0; i < e.changedTouches.length; i++){
                 const touch = e.changedTouches[i];
                 if (touch.identifier === moveTouchId) {
-                    const rect = moveZone.getBoundingClientRect();
-                    const x = touch.clientX - (rect.left + moveStickRadius);
-                    const y = touch.clientY - (rect.top + moveStickRadius);
-                    const dist = Math.min(Math.sqrt(x*x + y*y), moveStickRadius - 30);
-                    const angle = Math.atan2(y, x);
-
+                    const rect = moveZone.getBoundingClientRect(); const x = touch.clientX - (rect.left + moveStickRadius); const y = touch.clientY - (rect.top + moveStickRadius);
+                    const dist = Math.min(Math.sqrt(x*x + y*y), moveStickRadius - 30); const angle = Math.atan2(y, x);
                     moveStick.style.transform = `translate(${Math.cos(angle) * dist - 30}px, ${Math.sin(angle) * dist - 30}px)`;
-
-                    const deadzone = 0.1;
-                    const normalizedX = x / moveStickRadius;
-                    const normalizedY = y / moveStickRadius;
-
-                    moveForward = normalizedY < -deadzone;
-                    moveBackward = normalizedY > deadzone;
-                    moveLeft = normalizedX < -deadzone;
-                    moveRight = normalizedX > deadzone;
+                    const deadzone = 0.1; const normalizedX = x / moveStickRadius; const normalizedY = y / moveStickRadius;
+                    moveForward = normalizedY < -deadzone; moveBackward = normalizedY > deadzone; moveLeft = normalizedX < -deadzone; moveRight = normalizedX > deadzone;
                 } else if(touch.identifier === lookTouchId && !isTerminalActive) {
-                    const deltaX = touch.clientX - lookStart.x;
-                    const deltaY = touch.clientY - lookStart.y;
-                    cameraLookSpeed.x = deltaX * 0.002;
-                    cameraLookSpeed.y = deltaY * 0.002;
-                    lookStart.x = touch.clientX;
-                    lookStart.y = touch.clientY;
+                    const deltaX = touch.clientX - lookStart.x; const deltaY = touch.clientY - lookStart.y;
+                    cameraLookSpeed.x = deltaX * 0.002; cameraLookSpeed.y = deltaY * 0.002;
+                    lookStart.x = touch.clientX; lookStart.y = touch.clientY;
                 }
             }
         }, { passive: false });
-        
         document.addEventListener('touchstart', (e) => {
              for(let i=0; i < e.changedTouches.length; i++){
                 const touch = e.changedTouches[i];
                 if (touch.clientX > window.innerWidth / 2 && moveTouchId !== touch.identifier) {
-                    if (lookTouchId === -1 && !isTerminalActive) {
-                        lookTouchId = touch.identifier;
-                        lookStart.x = touch.clientX;
-                        lookStart.y = touch.clientY;
-                    }
+                    if (lookTouchId === -1 && !isTerminalActive) { lookTouchId = touch.identifier; lookStart.x = touch.clientX; lookStart.y = touch.clientY; }
                 }
             }
         });
-
         document.addEventListener('touchend', (e) => {
             for(let i=0; i < e.changedTouches.length; i++){
                 const touch = e.changedTouches[i];
-                if (touch.identifier === moveTouchId) {
-                    moveTouchId = -1;
-                    moveStick.style.transform = `translate(-50%, -50%)`;
-                    moveForward = moveBackward = moveLeft = moveRight = false;
-                } else if(touch.identifier === lookTouchId) {
-                    lookTouchId = -1;
-                }
+                if (touch.identifier === moveTouchId) { moveTouchId = -1; moveStick.style.transform = `translate(-50%, -50%)`; moveForward = moveBackward = moveLeft = moveRight = false; }
+                else if(touch.identifier === lookTouchId) { lookTouchId = -1; }
             }
         });
-
-        upBtn.addEventListener('touchstart', () => moveUp = true);
-        upBtn.addEventListener('touchend', () => moveUp = false);
-        downBtn.addEventListener('touchstart', () => moveDown = true);
-        downBtn.addEventListener('touchend', () => moveDown = false);
-        interactBtn.addEventListener('click', () => {
-            if (intersectedObject) openModalForObject(intersectedObject);
-        });
+        upBtn.addEventListener('touchstart', () => moveUp = true); upBtn.addEventListener('touchend', () => moveUp = false);
+        downBtn.addEventListener('touchstart', () => moveDown = true); downBtn.addEventListener('touchend', () => moveDown = false);
+        interactBtn.addEventListener('click', () => { if (intersectedObject) openModalForObject(intersectedObject); });
         document.getElementById('terminal-exit-btn-mobile').addEventListener('click', deactivateTerminal);
     }
 
     // --- Environment ---
-    // --- Sun ---
-    const sunPosition = new THREE.Vector3(200, 75, -500);
-    const sunGeo = new THREE.SphereGeometry(50, 64, 32);
-    const sunMaterial = new THREE.ShaderMaterial({
-        uniforms: {
-            uTime: { value: 0 },
-            uColor1: { value: new THREE.Color(0xffe8ab) },
-            uColor2: { value: new THREE.Color(0xff8c00) },
+    const sunPosition = new THREE.Vector3(300, 150, -500);
+
+    const dirLight = new THREE.DirectionalLight(0xffeeb1, 3);
+    dirLight.position.copy(sunPosition);
+    dirLight.castShadow = true;
+    dirLight.shadow.mapSize.width = 2048;
+    dirLight.shadow.mapSize.height = 2048;
+    dirLight.shadow.camera.near = 1;
+    dirLight.shadow.camera.far = 1500;
+    dirLight.shadow.camera.left = -500;
+    dirLight.shadow.camera.right = 500;
+    dirLight.shadow.camera.top = 500;
+    dirLight.shadow.camera.bottom = -500;
+    scene.add(dirLight);
+
+    const skyboxGeo = new THREE.SphereGeometry(1500, 32, 16);
+    const skyboxMaterial = new THREE.ShaderMaterial({
+        uniforms: { 
+            uSunDirection: { value: new THREE.Vector3().copy(sunPosition).normalize() },
+            uTime: { value: 0 }
         },
-        vertexShader: `
-            varying vec2 vUv;
-            void main() {
-                vUv = uv;
-                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-            }
-        `,
+        vertexShader: `varying vec3 vWorldPosition; void main() { vec4 worldPosition = modelMatrix * vec4(position, 1.0); vWorldPosition = worldPosition.xyz; gl_Position = projectionMatrix * viewMatrix * worldPosition; }`,
         fragmentShader: `
-            uniform float uTime;
-            uniform vec3 uColor1;
-            uniform vec3 uColor2;
-            varying vec2 vUv;
-
-            // 2D Noise function
-            float random (vec2 st) {
-                return fract(sin(dot(st.xy, vec2(12.9898,78.233))) * 43758.5453123);
-            }
-
-            // 2D Noise based on Morgan McGuire @morgan3d
-            float noise (vec2 st) {
-                vec2 i = floor(st);
-                vec2 f = fract(st);
-
-                float a = random(i);
-                float b = random(i + vec2(1.0, 0.0));
-                float c = random(i + vec2(0.0, 1.0));
-                float d = random(i + vec2(1.0, 1.0));
-
-                vec2 u = f*f*(3.0-2.0*f);
-                return mix(a, b, u.x) + (c - a)* u.y * (1.0 - u.x) + (d - b) * u.x * u.y;
-            }
-
-            void main() {
-                float dist = distance(vUv, vec2(0.5));
-                
-                // Turbulent surface
-                float t = uTime * 0.1;
-                float n = noise(vUv * 5.0 + t) * 0.5 + noise(vUv * 10.0 - t) * 0.25;
-                
-                // Create a glowing core
-                float core = 1.0 - smoothstep(0.0, 0.5, dist);
-                
-                // Mix colors based on noise and distance
-                vec3 color = mix(uColor1, uColor2, n);
-                
-                // Corona effect
-                float corona = smoothstep(0.45, 0.6, dist);
-                corona = 1.0 - corona;
-                
-                // Final color
-                vec3 finalColor = color * core + uColor1 * corona * 0.5;
-                
-                // Fade out at the edges
-                float alpha = 1.0 - smoothstep(0.48, 0.5, dist);
-
-                gl_FragColor = vec4(finalColor, alpha);
-            }
-        `,
-        transparent: true,
-        blending: THREE.AdditiveBlending,
-        depthWrite: false,
-    });
-    const sun = new THREE.Mesh(sunGeo, sunMaterial);
-    sun.position.copy(sunPosition);
-    scene.add(sun);
-    
-    // Add a point light for a subtle glow on other objects
-    const sunLight = new THREE.PointLight(0xffd185, 2, 2000, 1);
-    sunLight.position.copy(sunPosition);
-    scene.add(sunLight);
-
-
-    // --- Fractal Background ---
-    const fractalGeo = new THREE.SphereGeometry(1500, 64, 32); // A large sphere to act as the skybox
-    const fractalMaterial = new THREE.ShaderMaterial({
-        uniforms: {
-            uTime: { value: 0 },
-            uResolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) },
-            uSunDirection: { value: new THREE.Vector3().copy(sunPosition).normalize() }
-        },
-        vertexShader: `
-            varying vec3 vWorldDirection;
-
-            void main() {
-                vec4 worldPosition = modelMatrix * vec4( position, 1.0 );
-                vWorldDirection = worldPosition.xyz - cameraPosition;
-                gl_Position = projectionMatrix * viewMatrix * worldPosition;
-            }
-        `,
-        fragmentShader: `
-            uniform float uTime;
             uniform vec3 uSunDirection;
-            varying vec3 vWorldDirection;
+            uniform float uTime;
+            varying vec3 vWorldPosition;
 
-            const int MAX_STEPS = 32; // Optimization: Reduced raymarching steps
-            const float MAX_DIST = 100.0;
-            const float SURF_DIST = 0.001;
+            vec2 hash(vec2 p) {
+                p = vec2(dot(p, vec2(127.1, 311.7)), dot(p, vec2(269.5, 183.3)));
+                return -1.0 + 2.0 * fract(sin(p) * 43758.5453123);
+            }
 
-            float mandelbulbSDF(vec3 pos, float time) {
-                vec3 z = pos;
-                float dr = 1.0;
-                float r = 0.0;
-                float power = 8.0 + sin(time * 0.1) * 2.0; 
+            float noise(in vec2 p) {
+                vec2 i = floor(p);
+                vec2 f = fract(p);
+                vec2 u = f * f * (3.0 - 2.0 * f);
+                return mix(mix(dot(hash(i + vec2(0.0, 0.0)), f - vec2(0.0, 0.0)),
+                               dot(hash(i + vec2(1.0, 0.0)), f - vec2(1.0, 0.0)), u.x),
+                           mix(dot(hash(i + vec2(0.0, 1.0)), f - vec2(0.0, 1.0)),
+                               dot(hash(i + vec2(1.0, 1.0)), f - vec2(1.0, 1.0)), u.x), u.y);
+            }
 
-                for (int i = 0; i < 5; i++) {
-                    r = length(z);
-                    if (r > 2.0) break;
-
-                    float theta = acos(z.z / r);
-                    float phi = atan(z.y, z.x);
-                    dr = pow(r, power - 1.0) * power * dr + 1.0;
-
-                    float zr = pow(r, power);
-                    theta = theta * power;
-                    phi = phi * power;
-
-                    z = zr * vec3(sin(theta) * cos(phi), sin(phi) * sin(theta), cos(theta));
-                    z += pos;
+            float fbm(vec2 p, int octaves) {
+                float value = 0.0;
+                float amplitude = 0.5;
+                float frequency = 1.0;
+                for (int i = 0; i < octaves; i++) {
+                    value += amplitude * noise(p * frequency);
+                    frequency *= 2.0;
+                    amplitude *= 0.5;
                 }
-                return 0.5 * log(r) * r / dr;
+                return value;
             }
 
-            float map(vec3 p) {
-                float d = mandelbulbSDF(p * 0.5, uTime);
-                return d * 0.8;
-            }
+            const vec3 skyColor = vec3(0.15, 0.3, 0.6);
+            const vec3 horizonColor = vec3(0.7, 0.5, 0.3);
+            const vec3 sunColor = vec3(1.0, 0.9, 0.7);
 
-            vec3 getNormal(vec3 p) {
-                float d = map(p);
-                vec2 e = vec2(0.001, 0);
-                vec3 n = d - vec3(
-                    map(p - e.xyy),
-                    map(p - e.yxy),
-                    map(p - e.yyx)
-                );
-                return normalize(n);
+            const float cloudCover = 0.55;
+            const float cloudSharpness = 0.2;
+            const float cloudSpeed = 0.02;
+
+            void main() {
+                vec3 viewDir = normalize(vWorldPosition);
+                
+                float horizonFactor = smoothstep(0.0, 0.15, viewDir.y);
+                vec3 baseSky = mix(horizonColor, skyColor, horizonFactor);
+
+                float sunDot = dot(viewDir, uSunDirection);
+                float sunHalo = smoothstep(0.98, 1.0, sunDot);
+                vec3 finalColor = mix(baseSky, sunColor, pow(sunHalo, 15.0));
+                
+                if (viewDir.y > 0.0) {
+                    // Main clouds
+                    vec2 cloudUV1 = viewDir.xz / (viewDir.y * 1.5 + 0.2);
+                    cloudUV1.x += uTime * cloudSpeed;
+                    
+                    float cloudBase1 = fbm(cloudUV1 * 0.1, 6);
+                    float cloudDetail1 = fbm(cloudUV1 * 0.7 + cloudBase1 * 0.2, 5);
+                    float cloudMap1 = cloudBase1 + cloudDetail1 * 0.2;
+                    
+                    float coverage1 = smoothstep(1.0 - cloudCover - cloudSharpness, 1.0 - cloudCover, cloudMap1);
+                    
+                    // Wispy upper clouds
+                    vec2 cloudUV2 = viewDir.xz / (viewDir.y * 1.2 + 0.1);
+                    cloudUV2.x += uTime * cloudSpeed * 2.5;
+                    float cloudMap2 = fbm(cloudUV2 * 0.35, 5);
+                    float coverage2 = smoothstep(0.55, 0.7, cloudMap2) * 0.6;
+                    
+                    float totalCoverage = clamp(coverage1 + coverage2, 0.0, 1.0);
+
+                    vec3 cloudColor = vec3(1.0);
+                    
+                    float g = 0.75;
+                    float phase = (1.0 - g*g) / (4.0 * 3.14159 * pow(1.0 + g*g - 2.0*g*sunDot, 1.5));
+                    float sunLight = phase * 3.0;
+                    float ambientLight = 0.6 + viewDir.y * 0.4;
+                    
+                    vec3 litCloudColor = cloudColor * (sunLight + ambientLight);
+                    
+                    float heightFactor = smoothstep(0.0, 0.1, viewDir.y);
+                    litCloudColor = mix(litCloudColor * 0.65, litCloudColor, heightFactor);
+                    
+                    finalColor = mix(finalColor, litCloudColor, totalCoverage * heightFactor * 0.9);
+                }
+                
+                gl_FragColor = vec4(finalColor, 1.0);
+            }`,
+        side: THREE.BackSide, depthWrite: false
+    });
+    const skybox = new THREE.Mesh(skyboxGeo, skyboxMaterial);
+    scene.add(skybox);
+
+    const groundGeo = new THREE.PlaneGeometry(4000, 4000, 200, 200);
+    const groundMaterial = new THREE.MeshStandardMaterial({
+        color: 0x111111,
+        roughness: 0.85,
+        metalness: 0.1,
+    });
+
+    const noiseFunctions = `
+        float random (in vec2 st) { return fract(sin(dot(st.xy, vec2(12.9898,78.233))) * 43758.5453); }
+        float noise (in vec2 st) {
+            vec2 i = floor(st); vec2 f = fract(st);
+            float a = random(i); float b = random(i + vec2(1.0, 0.0));
+            float c = random(i + vec2(0.0, 1.0)); float d = random(i + vec2(1.0, 1.0));
+            vec2 u = f * f * (3.0 - 2.0 * f);
+            return mix(a, b, u.x) + (c - a) * u.y * (1.0 - u.x) + (d - b) * u.x * u.y;
+        }
+        float fbm(vec2 p) {
+            float value = 0.0; float amplitude = 0.5;
+            for (int i = 0; i < 6; i++) {
+                value += amplitude * noise(p); p *= 2.0; amplitude *= 0.5;
             }
+            return value;
+        }
+    `;
+
+    groundMaterial.onBeforeCompile = (shader) => {
+        shader.uniforms.uTime = { value: 0 };
+        shader.vertexShader = 'uniform float uTime;\n' + noiseFunctions + shader.vertexShader;
+        shader.vertexShader = shader.vertexShader.replace(
+            '#include <begin_vertex>',
+            `#include <begin_vertex>
+             float displacement = fbm(position.xz * 0.005) * 100.0 + fbm(position.xz * 0.05) * 20.0;
+             transformed.y += displacement;
+            `
+        );
+    };
+    const ground = new THREE.Mesh(groundGeo, groundMaterial);
+    ground.rotation.x = -Math.PI / 2;
+    ground.position.y = -20;
+    ground.receiveShadow = true;
+    scene.add(ground);
+    
+    // --- Add Trees ---
+    const treeCount = 1500;
+    const trunkGeo = new THREE.CylinderGeometry(0.5, 0.8, 8, 8);
+    const trunkMat = new THREE.MeshStandardMaterial({ color: 0x4d382c, roughness: 0.9 });
+    const foliageGeo = new THREE.IcosahedronGeometry(5, 0);
+    const foliageMat = new THREE.MeshStandardMaterial({ color: 0x224422, roughness: 0.8 });
+
+    const trunks = new THREE.InstancedMesh(trunkGeo, trunkMat, treeCount);
+    const foliage = new THREE.InstancedMesh(foliageGeo, foliageMat, treeCount);
+    trunks.castShadow = true;
+    foliage.castShadow = true;
+    trunks.receiveShadow = true; // Trees can receive shadows from other trees
+    foliage.receiveShadow = true;
+
+    const dummy = new THREE.Object3D();
+    const treeRaycaster = new THREE.Raycaster();
+    const downVector = new THREE.Vector3(0, -1, 0);
+
+    let treesPlaced = 0;
+    for (let i = 0; i < treeCount; i++) {
+        const x = (Math.random() - 0.5) * 3500;
+        const z = (Math.random() - 0.5) * 3500;
+
+        if (x*x + z*z < 100 * 100) continue; // Don't place trees too close to the center
+
+        treeRaycaster.set(new THREE.Vector3(x, 200, z), downVector);
+        const intersects = treeRaycaster.intersectObject(ground);
+
+        if (intersects.length > 0) {
+            const groundY = intersects[0].point.y;
+            if (intersects[0].face.normal.y < 0.75) continue; // Don't place on steep slopes
+
+            const scale = Math.random() * 0.8 + 0.6;
             
-            float rayMarch(vec3 ro, vec3 rd) {
-                float dO = 0.0;
-                for(int i = 0; i < MAX_STEPS; i++) {
-                    vec3 p = ro + rd * dO;
-                    float dS = map(p);
-                    dO += dS;
-                    if(dO > MAX_DIST || abs(dS) < SURF_DIST) break;
-                }
-                return dO;
-            }
+            // Trunk
+            dummy.position.set(x, groundY + 4 * scale, z);
+            dummy.rotation.y = Math.random() * Math.PI * 2;
+            dummy.scale.set(scale, scale, scale);
+            dummy.updateMatrix();
+            trunks.setMatrixAt(treesPlaced, dummy.matrix);
 
-            vec3 palette(float t) {
-                vec3 a = vec3(0.5, 0.5, 0.5);
-                vec3 b = vec3(0.5, 0.5, 0.5);
-                vec3 c = vec3(1.0, 1.0, 1.0);
-                vec3 d = vec3(0.2, 0.4, 0.8);
-                return a + b * cos(6.28318 * (c * t + d));
-            }
+            // Foliage
+            dummy.position.y += 6 * scale;
+            dummy.rotation.x = Math.random() * 0.2;
+            dummy.rotation.z = Math.random() * 0.2;
+            dummy.updateMatrix();
+            foliage.setMatrixAt(treesPlaced, dummy.matrix);
+            
+            treesPlaced++;
+        }
+    }
+    trunks.count = treesPlaced;
+    foliage.count = treesPlaced;
+    scene.add(trunks);
+    scene.add(foliage);
 
-            void main() {
-                vec3 ro = cameraPosition;
-                vec3 rd = normalize(vWorldDirection);
-
-                float dist = rayMarch(ro, rd);
-                
-                if (dist > MAX_DIST) {
-                    gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0); // Black background
-                    return;
-                }
-                
-                vec3 p = ro + rd * dist;
-                vec3 n = getNormal(p);
-                
-                float light = dot(n, uSunDirection);
-                
-                float color_t = length(p) * 0.1 + uTime * 0.05;
-                vec3 col = palette(color_t);
-                col = col * (0.5 + 0.5 * light);
-                col = mix(col, vec3(0.0), 1.0 - exp(-0.0005 * dist * dist)); // Fog
-
-                gl_FragColor = vec4(col, 1.0);
-            }
-        `,
-        side: THREE.BackSide,
-        depthWrite: false
-    });
-    const fractalBackground = new THREE.Mesh(fractalGeo, fractalMaterial);
-    scene.add(fractalBackground);
-
-    // --- Fractal Landscape ---
-    const landscapeGeo = new THREE.PlaneGeometry(4000, 4000, 256, 256);
-    const landscapeMaterial = new THREE.ShaderMaterial({
-        uniforms: {
-            uTime: { value: 0 },
-            uColor1: { value: new THREE.Color(0x8b5cf6) }, // secondary-glow
-            uColor2: { value: new THREE.Color(0x3b82f6) }, // primary-glow
-            uFogColor: { value: new THREE.Color(0x000000) },
-            uFogNear: { value: 200.0 },
-            uFogFar: { value: 1500.0 },
-        },
-        vertexShader: `
-            uniform float uTime;
-            varying float vHeight;
-            varying vec3 vWorldPosition;
-
-            // 2D simplex noise
-            vec3 permute(vec3 x) { return mod(((x*34.0)+1.0)*x, 289.0); }
-            float snoise(vec2 v) {
-                const vec4 C = vec4(0.211324865405187, 0.366025403784439, -0.577350269189626, 0.024390243902439);
-                vec2 i = floor(v + dot(v, C.yy));
-                vec2 x0 = v - i + dot(i, C.xx);
-                vec2 i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
-                vec4 x12 = x0.xyxy + C.xxzz;
-                x12.xy -= i1;
-                i = mod(i, 289.0);
-                vec3 p = permute(permute(i.y + vec3(0.0, i1.y, 1.0)) + i.x + vec3(0.0, i1.x, 1.0));
-                vec3 m = max(0.5 - vec3(dot(x0, x0), dot(x12.xy, x12.xy), dot(x12.zw, x12.zw)), 0.0);
-                m = m*m;
-                m = m*m;
-                vec3 x = 2.0 * fract(p * C.www) - 1.0;
-                vec3 h = abs(x) - 0.5;
-                vec3 ox = floor(x + 0.5);
-                vec3 a0 = x - ox;
-                m *= 1.79284291400159 - 0.85373472095314 * (a0*a0 + h*h);
-                vec3 g;
-                g.x = a0.x * x0.x + h.x * x0.y;
-                g.yz = a0.yz * x12.xz + h.yz * x12.yw;
-                return 130.0 * dot(m, g);
-            }
-
-            void main() {
-                vec2 pos = position.xy * 0.005;
-                
-                float noise = snoise(pos + uTime * 0.02) * 0.5;
-                noise += snoise(pos * 2.0 + uTime * 0.05) * 0.25;
-                noise += snoise(pos * 4.0 + uTime * 0.1) * 0.125;
-                
-                vHeight = noise;
-                
-                vec3 newPosition = position + vec3(0.0, 0.0, noise * 40.0);
-                
-                vWorldPosition = (modelMatrix * vec4(newPosition, 1.0)).xyz;
-                gl_Position = projectionMatrix * modelViewMatrix * vec4(newPosition, 1.0);
-            }
-        `,
-        fragmentShader: `
-            uniform vec3 uColor1;
-            uniform vec3 uColor2;
-            uniform vec3 uFogColor;
-            uniform float uFogNear;
-            uniform float uFogFar;
-
-            varying float vHeight;
-            varying vec3 vWorldPosition;
-
-            void main() {
-                vec2 grid = abs(fract(vWorldPosition.xz * 0.02) - 0.5);
-                float line = 1.0 - min(grid.x, grid.y) * 20.0;
-                line = smoothstep(0.0, 1.0, line);
-                
-                vec3 color = mix(uColor1, uColor2, vHeight * 0.5 + 0.5);
-                vec3 finalColor = color * line * (0.8 + vHeight * 0.5);
-
-                float dist = length(vWorldPosition - cameraPosition);
-                float fogFactor = smoothstep(uFogNear, uFogFar, dist);
-                finalColor = mix(finalColor, uFogColor, fogFactor);
-
-                gl_FragColor = vec4(finalColor, line);
-            }
-        `,
-        blending: THREE.AdditiveBlending,
-        depthWrite: false,
-        side: THREE.DoubleSide
-    });
-    const landscape = new THREE.Mesh(landscapeGeo, landscapeMaterial);
-    landscape.rotation.x = -Math.PI / 2;
-    landscape.position.y = -50;
-    scene.add(landscape);
-
-    // --- Companion Sphere ---
-    const companionGeo = new THREE.SphereGeometry(1, 32, 32);
-    const companionMaterial = new THREE.ShaderMaterial({
-        uniforms: {
-            uTime: { value: 0 },
-            uSpeed: { value: 0 },
-            uColor: { value: new THREE.Color(0x8b5cf6) }
-        },
-        vertexShader: `
-            varying vec3 vNormal;
-            varying vec3 vPosition;
-            varying vec3 vWorldPosition;
-
-            void main() {
-                vNormal = normalize(normalMatrix * normal);
-                vPosition = vec3(modelViewMatrix * vec4(position, 1.0));
-                vWorldPosition = (modelMatrix * vec4(position, 1.0)).xyz;
-                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-            }
-        `,
-        fragmentShader: `
-            uniform float uTime;
-            uniform float uSpeed;
-            uniform vec3 uColor;
-
-            varying vec3 vNormal;
-            varying vec3 vPosition;
-            varying vec3 vWorldPosition;
-
-            float simpleNoise(vec3 p, float speed) {
-                float time = uTime * (1.0 + speed * 2.0);
-                return sin(p.x * 10.0 + time) *
-                       sin(p.y * 10.0 + time) *
-                       sin(p.z * 10.0 + time);
-            }
-
-            void main() {
-                // Fresnel for edge glow
-                vec3 viewDirection = normalize(-vPosition);
-                float fresnel = 1.0 - dot(viewDirection, vNormal);
-                fresnel = pow(fresnel, 4.0) * (1.5 + uSpeed * 5.0); // Glow more with speed
-
-                // Core pulse
-                float core = 1.0 - length(vPosition);
-                core = smoothstep(0.6, 1.0, core);
-                core *= (0.5 + sin(uTime * 5.0) * 0.5);
-
-                // Surface energy pattern
-                float noise = simpleNoise(vWorldPosition * 0.5, uSpeed);
-                noise = smoothstep(0.2, 0.8, noise);
-
-                // Combine
-                vec3 finalColor = uColor * (noise * 0.5 + fresnel + core * 0.5);
-                float alpha = clamp(fresnel + noise * 0.1 + core * 0.2, 0.0, 1.0);
-
-                gl_FragColor = vec4(finalColor, alpha);
-            }
-        `,
-        transparent: true,
-        blending: THREE.AdditiveBlending,
-        depthWrite: false
+    const companionGeo = new THREE.SphereGeometry(1, 32, 16);
+    const companionMaterial = new THREE.MeshPhysicalMaterial({
+        color: 0xa855f7,
+        roughness: 0.1,
+        metalness: 0.2,
+        transmission: 1.0,
+        ior: 1.8,
+        thickness: 0.5,
+        emissive: 0xa855f7,
+        emissiveIntensity: 0.1
     });
     const companionSphere = new THREE.Mesh(companionGeo, companionMaterial);
+    companionSphere.castShadow = true;
     scene.add(companionSphere);
-
     const companionTarget = new THREE.Object3D();
     camera.add(companionTarget);
     companionTarget.position.set(2.5, 1, -5);
 
-    // --- Data for the application ---
     const appData = {
       tricks: [ { name: '540 Kick', difficulty: 'Новичок', description: 'Вращение на 540° с ударом ногой в воздухе. Основа для многих продвинутых трюков.' }, { name: 'Butterfly Kick (B-Kick)', difficulty: 'Новичок', description: 'Горизонтальное вращение с махом ногами, похожее на крылья бабочки.' }, { name: 'Gainer', difficulty: 'Средний', description: 'Сальто назад с движением вперёд. Часто выполняется с возвышения.' }, { name: 'Corkscrew (Cork)', difficulty: 'Средний', description: 'Горизонтальный винт в воздухе, сочетающий сальто и вращение. Выглядит очень эффектно.' }, { name: 'Double Cork', difficulty: 'Продвинутый', description: 'Corkscrew с двумя полными винтами в воздухе. Требует высоты и контроля.' }, { name: 'Cartwheel Full Twist', difficulty: 'Продвинутый', description: 'Колесо, переходящее в сальто назад с винтом. Динамичный и красивый элемент.' } ],
       instructors: [ { name: 'Дмитрий "Вихрь" Петров', specialty: 'Силовые элементы и сальто', bio: 'Мастер акробатики, который научит вас летать. Дмитрий верит, что нет ничего невозможного.' }, { name: 'Елена "Стрела" Волкова', specialty: 'Гибкость и кикинг', bio: 'Ее удары ногами - это искусство. Елена поможет вам развить грацию, скорость и невероятную гибкость.' }, { name: 'Иван "Метеор" Соколов', specialty: 'Комбо и переходы', bio: 'Гуру плавных связок и креативных переходов. Иван научит вас создавать свой уникальный стиль.' }, ],
       schedule: [ { day: 'Понедельник', time: '18:00 - 19:30', className: 'Основы Трикинга', level: 'Новичок' }, { day: 'Вторник', time: '19:00 - 20:30', className: 'Продвинутые Кики', level: 'Средний' }, { day: 'Среда', time: '18:00 - 19:30', className: 'Акробатика', level: 'Все уровни' }, { day: 'Четверг', time: '20:00 - 21:30', className: 'Комбо-сессия', level: 'Продвинутый' }, { day: 'Пятница', time: '19:00 - 20:30', className: 'Открытый Зал', level: 'Все уровни' }, { day: 'Суббота', time: '12:00 - 14:00', className: 'Интенсив по Сальто', level: 'Средний/Продвинутый' }, ]
     };
 
-
-    // --- Interactive Objects ---
-    const interactiveObjects = [];
-    const animatingObjects = [];
-    
+    const interactiveObjects = []; const animatingObjects = [];
     function createPortal(text, position, color, dataKey) {
-        const group = new THREE.Group();
-        group.name = text; // Assign a name for easier lookup
-        group.userData.color = new THREE.Color(color);
-        group.userData.type = 'portal';
-        group.userData.dataKey = dataKey;
-
-        const vertexShader = `
-            varying vec3 vNormal; varying vec3 vPosition;
-            void main() {
-                vNormal = normalize(normalMatrix * normal);
-                vPosition = vec3(modelViewMatrix * vec4(position, 1.0));
-                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-            }
-        `;
+        const group = new THREE.Group(); group.name = text; group.userData.color = new THREE.Color(color); group.userData.type = 'portal'; group.userData.dataKey = dataKey;
+        const vertexShader = `varying vec3 vNormal; varying vec3 vPosition; void main() { vNormal = normalize(normalMatrix * normal); vPosition = vec3(modelViewMatrix * vec4(position, 1.0)); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`;
         const fragmentShader = `
             uniform vec3 uColor; uniform float uTime; varying vec3 vNormal; varying vec3 vPosition;
+            float random (vec2 st) { return fract(sin(dot(st.xy, vec2(12.9898,78.233)))*43758.5453); }
+            float noise (vec2 st) { vec2 i = floor(st); vec2 f = fract(st); vec2 u = f*f*(3.0-2.0*f); return mix(mix(random(i + vec2(0.0,0.0)), random(i + vec2(1.0,0.0)), u.x), mix(random(i + vec2(0.0,1.0)), random(i + vec2(1.0,1.0)), u.x), u.y); }
             void main() {
                 vec3 viewDirection = normalize(-vPosition);
                 float fresnel = 1.0 - dot(viewDirection, vNormal);
                 fresnel = pow(fresnel, 3.0);
-                float bands = sin(vPosition.y * 15.0 - uTime * 3.0) * 0.5 + 0.5;
-                float energy = smoothstep(0.45, 0.55, bands);
-                float intensity = fresnel * 1.5 + energy * 0.3;
-                float alpha = pow(fresnel, 2.0) + energy * 0.2;
-                gl_FragColor = vec4(uColor * intensity, alpha);
-            }
-        `;
-        
-        const portalMaterial = new THREE.ShaderMaterial({
-            uniforms: { uTime: { value: 0 }, uColor: { value: new THREE.Color(color) } },
-            vertexShader, fragmentShader, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false
-        });
+                float t = uTime * 2.0;
+                float noiseVal = noise(vPosition.xy * 3.0 + t) * noise(vPosition.yz * 3.0 - t);
+                float bands = sin(vPosition.y * 15.0 - t * 2.0 + noiseVal * 5.0) * 0.5 + 0.5;
+                float core = smoothstep(0.2, 0.0, length(vPosition.xz));
+                float intensity = fresnel * 1.5 + bands * 0.4 + core * 2.0;
+                float alpha = pow(fresnel, 2.0) + bands * 0.3 + core;
+                gl_FragColor = vec4(uColor * intensity, clamp(alpha, 0.0, 1.0));
+            }`;
+        const portalMaterial = new THREE.ShaderMaterial({ uniforms: { uTime: { value: 0 }, uColor: { value: new THREE.Color(color) } }, vertexShader, fragmentShader, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false });
         group.userData.material = portalMaterial;
-
-        const mainRing = new THREE.Mesh(new THREE.TorusGeometry(5, 0.2, 16, 64), portalMaterial);
-        mainRing.userData = { isInteractive: true, dataKey };
-        mainRing.name = `${text}_mainRing`;
-
-        const innerRing = new THREE.Mesh(new THREE.TorusGeometry(4.2, 0.1, 16, 64), portalMaterial);
-        innerRing.rotation.x = Math.PI / 2;
+        const mainRing = new THREE.Mesh(new THREE.TorusGeometry(5, 0.2, 8, 32), portalMaterial); mainRing.userData = { isInteractive: true, dataKey }; mainRing.name = `${text}_mainRing`; mainRing.castShadow = true;
+        const innerRing = new THREE.Mesh(new THREE.TorusGeometry(4.2, 0.1, 8, 32), portalMaterial); innerRing.rotation.x = Math.PI / 2;
+        const core = new THREE.Mesh(new THREE.SphereGeometry(0.5, 16, 8), new THREE.MeshBasicMaterial({ color: color, transparent: true, opacity: 0.8 }));
+        const labelDiv = document.createElement('div'); labelDiv.className = 'css2d-label'; labelDiv.textContent = text;
+        const label = new CSS2DObject(labelDiv); label.position.set(0, 6.5, 0);
         
-        const core = new THREE.Mesh(new THREE.SphereGeometry(0.5, 32, 32), new THREE.MeshBasicMaterial({ color: color, transparent: true, opacity: 0.8 }));
-        
-        const labelDiv = document.createElement('div');
-        labelDiv.className = 'css2d-label';
-        labelDiv.textContent = text;
-        const label = new CSS2DObject(labelDiv);
-        label.position.set(0, 6.5, 0);
-
         group.add(mainRing, innerRing, core, label);
-        group.position.copy(position);
-        scene.add(group);
-        interactiveObjects.push(mainRing);
-        animatingObjects.push(group);
+        group.position.copy(position); scene.add(group); interactiveObjects.push(mainRing); animatingObjects.push(group);
         return group;
     }
-
     function createImagePlane(text, position, imageUrl) {
-        const group = new THREE.Group();
-        group.name = text;
-        group.userData.type = 'image';
+        const group = new THREE.Group(); group.name = text; group.userData.type = 'image';
         const texture = new THREE.TextureLoader().load(imageUrl);
-        const aspect = 16 / 9;
-        const width = 20;
-        const planeMat = new THREE.MeshStandardMaterial({ map: texture, side: THREE.DoubleSide, transparent: true, opacity: 0.9, roughness: 0.7, metalness: 0.1 });
+        const aspect = 16 / 9; const width = 20;
+        const planeMat = new THREE.MeshStandardMaterial({ map: texture, side: THREE.DoubleSide, transparent: true, opacity: 1.0, roughness: 0.7, metalness: 0.1 });
         const plane = new THREE.Mesh(new THREE.PlaneGeometry(width, width / aspect), planeMat);
-        
-        const labelDiv = document.createElement('div');
-        labelDiv.className = 'css2d-label';
-        labelDiv.textContent = text;
-        const label = new CSS2DObject(labelDiv);
-        label.position.set(0, (width / aspect / 2) + 1.5, 0);
-        
-        group.add(plane, label);
-        group.position.copy(position);
-        scene.add(group);
-        animatingObjects.push(group);
+        plane.castShadow = true; plane.receiveShadow = true;
+        const labelDiv = document.createElement('div'); labelDiv.className = 'css2d-label'; labelDiv.textContent = text;
+        const label = new CSS2DObject(labelDiv); label.position.set(0, (width / aspect / 2) + 1.5, 0);
+        group.add(plane, label); group.position.copy(position); scene.add(group); animatingObjects.push(group);
         return group;
     }
-
     function createComputerTerminal(text, position, dataKey) {
-        const group = new THREE.Group();
-        group.name = text;
-        group.userData.type = 'terminal';
-        group.userData.dataKey = dataKey;
-        
-        const screenWidth = 8, screenHeight = screenWidth / (16/9);
-        const divWidth = 1280, divHeight = 720;
-
-        const iframeContainer = document.createElement('div');
-        iframeContainer.style.width = `${divWidth}px`;
-        iframeContainer.style.height = `${divHeight}px`;
-        iframeContainer.style.backgroundColor = '#000';
-        iframeContainer.style.pointerEvents = 'none';
+        const group = new THREE.Group(); group.name = text; group.userData.type = 'terminal'; group.userData.dataKey = dataKey;
+        const screenWidth = 8, screenHeight = screenWidth / (16/9); const divWidth = 1280, divHeight = 720;
+        const iframeContainer = document.createElement('div'); iframeContainer.style.width = `${divWidth}px`; iframeContainer.style.height = `${divHeight}px`; iframeContainer.style.backgroundColor = '#000'; iframeContainer.style.pointerEvents = 'none';
         iframeContainer.innerHTML = `<iframe src="https://lofreeem.github.io/CyberVambaPip2077/" style="width: 100%; height: 100%; border: none;"></iframe>`;
-        
-        const cssScreenObject = new CSS3DObject(iframeContainer);
-        cssScreenObject.scale.set(screenWidth / divWidth, screenHeight / divHeight, 1);
-        group.add(cssScreenObject);
-        group.userData.iframeContainer = iframeContainer;
-        
-        const frameMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.4, metalness: 0.8 });
+        const cssScreenObject = new CSS3DObject(iframeContainer); cssScreenObject.scale.set(screenWidth / divWidth, screenHeight / divHeight, 1);
+        group.add(cssScreenObject); group.userData.iframeContainer = iframeContainer;
+        const frameMat = new THREE.MeshPhysicalMaterial({ color: 0x222222, roughness: 0.2, metalness: 0.9, clearcoat: 1.0, clearcoatRoughness: 0.1 });
         const frameDepth = 0.5, frameThickness = 0.3;
-        const topFrame = new THREE.Mesh(new THREE.BoxGeometry(screenWidth + frameThickness*2, frameThickness, frameDepth), frameMat);
-        topFrame.position.y = screenHeight/2 + frameThickness/2;
-        const bottomFrame = new THREE.Mesh(new THREE.BoxGeometry(screenWidth + frameThickness*2, frameThickness, frameDepth), frameMat);
-        bottomFrame.position.y = -(screenHeight/2 + frameThickness/2);
-        const leftFrame = new THREE.Mesh(new THREE.BoxGeometry(frameThickness, screenHeight + (frameThickness * 2), frameDepth), frameMat);
-        leftFrame.position.x = -(screenWidth/2 + frameThickness/2);
-        const rightFrame = new THREE.Mesh(new THREE.BoxGeometry(frameThickness, screenHeight + (frameThickness * 2), frameDepth), frameMat);
-        rightFrame.position.x = screenWidth/2 + frameThickness/2;
+        const topFrame = new THREE.Mesh(new THREE.BoxGeometry(screenWidth + frameThickness*2, frameThickness, frameDepth), frameMat); topFrame.position.y = screenHeight/2 + frameThickness/2; topFrame.castShadow = true;
+        const bottomFrame = new THREE.Mesh(new THREE.BoxGeometry(screenWidth + frameThickness*2, frameThickness, frameDepth), frameMat); bottomFrame.position.y = -(screenHeight/2 + frameThickness/2); bottomFrame.castShadow = true;
+        const leftFrame = new THREE.Mesh(new THREE.BoxGeometry(frameThickness, screenHeight + (frameThickness * 2), frameDepth), frameMat); leftFrame.position.x = -(screenWidth/2 + frameThickness/2); leftFrame.castShadow = true;
+        const rightFrame = new THREE.Mesh(new THREE.BoxGeometry(frameThickness, screenHeight + (frameThickness * 2), frameDepth), frameMat); rightFrame.position.x = screenWidth/2 + frameThickness/2; rightFrame.castShadow = true;
         group.add(topFrame, bottomFrame, leftFrame, rightFrame);
-        
-        const placeholderScreen = new THREE.Mesh(
-            new THREE.PlaneGeometry(screenWidth, screenHeight),
-            new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0 })
-        );
-        placeholderScreen.userData = { isInteractive: true, dataKey };
-        group.add(placeholderScreen);
-
-        const labelDiv = document.createElement('div');
-        labelDiv.className = 'css2d-label';
-        labelDiv.textContent = text;
-        const label = new CSS2DObject(labelDiv);
-        label.position.set(0, (screenHeight / 2) + 1.5, 0);
-
-        group.add(label);
-        group.position.copy(position);
-        scene.add(group);
-        interactiveObjects.push(placeholderScreen);
+        const placeholderScreen = new THREE.Mesh(new THREE.PlaneGeometry(screenWidth, screenHeight), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0 }));
+        placeholderScreen.userData = { isInteractive: true, dataKey }; group.add(placeholderScreen);
+        const labelDiv = document.createElement('div'); labelDiv.className = 'css2d-label'; labelDiv.textContent = text;
+        const label = new CSS2DObject(labelDiv); label.position.set(0, (screenHeight / 2) + 1.5, 0);
+        group.add(label); group.position.copy(position); scene.add(group); interactiveObjects.push(placeholderScreen); animatingObjects.push(group);
         return group;
     }
+    createPortal('Трюки', new THREE.Vector3(0, 5, -40), 0x0ea5e9, 'tricks');
+    createPortal('Инструкторы', new THREE.Vector3(-40, 5, 0), 0xa855f7, 'instructors');
+    createPortal('Расписание', new THREE.Vector3(40, 5, 0), 0x2dd4bf, 'schedule');
+    createPortal('Контакты', new THREE.Vector3(0, 5, 50), 0xf59e0b, 'contact');
+    createImagePlane('Галерея', new THREE.Vector3(80, 10, 40), 'https://picsum.photos/seed/parkour/1280/720');
+    createComputerTerminal('Терминал', new THREE.Vector3(-50, 2.5, -20), 'monitor');
 
-    createPortal('Трюки', new THREE.Vector3(0, 0, -40), 0x3b82f6, 'tricks');
-    createPortal('Инструкторы', new THREE.Vector3(-40, 10, 0), 0x8b5cf6, 'instructors');
-    createPortal('Расписание', new THREE.Vector3(40, -10, 0), 0x10b981, 'schedule');
-    createPortal('Контакты', new THREE.Vector3(0, -5, 50), 0xf59e0b, 'contact');
-    createImagePlane('Галерея', new THREE.Vector3(80, 5, 40), 'https://picsum.photos/seed/parkour/1280/720');
-    createComputerTerminal('Терминал', new THREE.Vector3(-50, 5, -20), 'monitor');
-
-
-    // --- Raycasting for Interaction ---
     const raycaster = new THREE.Raycaster();
     const crosshair = document.querySelector('.crosshair');
     const interactionPrompt = document.querySelector('.interaction-prompt');
@@ -1098,267 +943,149 @@
     let intersectedObject = null;
     const mouse = new THREE.Vector2();
 
-
-    // --- Drag and Drop Logic ---
-    const dropZone = document.getElementById('drop-zone');
-    let dragCounter = 0;
-
-    window.addEventListener('dragenter', (e) => {
-        e.preventDefault();
-        dragCounter++;
-        if (!isTerminalActive) {
-            dropZone.classList.remove('hidden');
-        }
-    });
-
-    window.addEventListener('dragover', (e) => {
-        e.preventDefault();
-    });
-
-    window.addEventListener('dragleave', (e) => {
-        e.preventDefault();
-        dragCounter--;
-        if (dragCounter === 0) {
-            dropZone.classList.add('hidden');
-        }
-    });
-
+    const dropZone = document.getElementById('drop-zone'); let dragCounter = 0;
+    window.addEventListener('dragenter', (e) => { e.preventDefault(); dragCounter++; if (!isTerminalActive) { dropZone.classList.remove('hidden'); } });
+    window.addEventListener('dragover', (e) => { e.preventDefault(); });
+    window.addEventListener('dragleave', (e) => { e.preventDefault(); dragCounter--; if (dragCounter === 0) { dropZone.classList.add('hidden'); } });
     window.addEventListener('drop', (e) => {
-        e.preventDefault();
-        dragCounter = 0;
-        dropZone.classList.add('hidden');
-        if (isTerminalActive) return;
-
+        e.preventDefault(); dragCounter = 0; dropZone.classList.add('hidden'); if (isTerminalActive) return;
         if (e.dataTransfer.files.length > 0) {
             const file = e.dataTransfer.files[0];
             if (file.type.startsWith('image/')) {
                 const reader = new FileReader();
-                reader.onload = (event) => {
-                    const imageUrl = event.target.result;
-                    placeImageInScene(imageUrl, e.clientX, e.clientY);
-                };
+                reader.onload = (event) => { placeImageInScene(event.target.result, e.clientX, e.clientY); };
                 reader.readAsDataURL(file);
             }
         }
     });
-    
     function placeImageInScene(imageUrl, x, y) {
-        mouse.x = (x / window.innerWidth) * 2 - 1;
-        mouse.y = -(y / window.innerHeight) * 2 + 1;
-        
+        mouse.x = (x / window.innerWidth) * 2 - 1; mouse.y = -(y / window.innerHeight) * 2 + 1;
         raycaster.setFromCamera(mouse, camera);
-        const intersects = raycaster.intersectObject(landscape);
-
+        const intersects = raycaster.intersectObject(ground);
         if (intersects.length > 0) {
             const point = intersects[0].point;
-            
             const textureLoader = new THREE.TextureLoader();
             textureLoader.load(imageUrl, (texture) => {
-                const img = texture.image;
-                const aspect = img.width / img.height;
-                const width = 10;
-                const height = width / aspect;
-
+                const img = texture.image; const aspect = img.width / img.height; const width = 10; const height = width / aspect;
                 const planeGeo = new THREE.PlaneGeometry(width, height);
-                const planeMat = new THREE.MeshStandardMaterial({
-                    map: texture,
-                    side: THREE.DoubleSide,
-                    transparent: true,
-                    roughness: 0.5
-                });
-                
+                const planeMat = new THREE.MeshStandardMaterial({ map: texture, side: THREE.DoubleSide, roughness: 0.5 });
                 const planeMesh = new THREE.Mesh(planeGeo, planeMat);
-                planeMesh.position.copy(point).add(new THREE.Vector3(0, height / 2 + 1, 0)); // Place it on the ground and raise it a bit
-                planeMesh.lookAt(camera.position);
-
+                planeMesh.position.copy(point).add(new THREE.Vector3(0, height / 2 + 0.1, 0)); planeMesh.lookAt(camera.position);
+                planeMesh.castShadow = true; planeMesh.receiveShadow = true;
                 scene.add(planeMesh);
             });
         }
     }
     
-    const speed = 80.0;
-    // --- Animation Loop ---
+    const speed = 60.0;
     const clock = new THREE.Clock();
     function animate() {
       requestAnimationFrame(animate);
-      const delta = clock.getDelta();
-      const time = clock.getElapsedTime();
+      const delta = clock.getDelta(); const time = clock.getElapsedTime();
 
-      // Update Sun & Fractals
-      sunMaterial.uniforms.uTime.value = time;
-      fractalMaterial.uniforms.uTime.value = time;
-      landscapeMaterial.uniforms.uTime.value = time * 0.1;
+      skybox.material.uniforms.uTime.value = time;
+      finalPass.uniforms.uTime.value = time;
+      
+      // Check for intersections
+      raycaster.setFromCamera({ x: 0, y: 0 }, camera); const intersects = raycaster.intersectObjects(interactiveObjects);
+      
+      if (intersects.length > 0 && intersects[0].distance < 15 && !isTerminalActive) {
+          intersectedObject = intersects[0].object;
+          const objectLabel = intersectedObject.parent.children.find(c => c.isCSS2DObject)?.element.textContent || intersectedObject.parent.name;
+          if(isMobile){ interactBtnMobile.classList.remove('hidden'); }
+          else { crosshair.classList.add('interactive'); interactionPrompt.classList.add('visible'); interactionText.textContent = `Взаимодействовать с "${objectLabel}"`; }
+      } else {
+          intersectedObject = null;
+          if(isMobile){ interactBtnMobile.classList.add('hidden'); }
+          else { crosshair.classList.remove('interactive'); interactionPrompt.classList.remove('visible'); }
+      }
 
-      // Update Animating Objects
-      animatingObjects.forEach((p, i) => {
-        if (!p.parent) return; // Skip if object has been removed
-        const scalePulse = 1 + Math.sin(time * 2 + i) * 0.05;
-        p.scale.set(scalePulse, scalePulse, scalePulse);
+      animatingObjects.forEach((p) => {
+        if (!p.parent) return;
+        const isIntersected = (intersectedObject && (p === intersectedObject.parent || p === intersectedObject.parent.parent));
 
         if (p.userData.type === 'portal') {
-            p.children[0].rotation.y += 0.003;
-            p.children[1].rotation.y -= 0.008;
-            p.children[1].rotation.x += 0.003;
+            p.children[0].rotation.y += 0.003; p.children[1].rotation.y -= 0.008; p.children[1].rotation.x += 0.003;
             p.userData.material.uniforms.uTime.value = time;
-            const intensity = 0.8 + Math.sin(time * 3 + i) * 0.2;
-            const color = p.userData.color.clone().multiplyScalar(intensity);
-            p.userData.material.uniforms.uColor.value.copy(color);
+            
+            const baseIntensity = 0.8 + Math.sin(time * 3 + p.position.x) * 0.2;
+            const finalIntensity = isIntersected ? baseIntensity * 1.8 : baseIntensity;
+            const color = p.userData.color.clone().multiplyScalar(finalIntensity);
+
+            p.userData.material.uniforms.uColor.value.copy(color); 
             p.children[2].material.color.copy(color);
         } else if (p.userData.type === 'image') {
-            p.rotation.y += Math.sin(time * 0.5 + i) * 0.001;
+            p.rotation.y += Math.sin(time * 0.5 + p.position.x) * 0.001;
+        }
+
+        if (isIntersected) {
+            const targetScale = 1.1 + Math.sin(time * 6.0) * 0.05;
+            p.scale.lerp(new THREE.Vector3(targetScale, targetScale, targetScale), 0.1);
+        } else {
+            p.scale.lerp(new THREE.Vector3(1, 1, 1), 0.1);
         }
       });
 
-      // Update controls and movement
       if (!isTerminalActive) {
-        velocity.x -= velocity.x * 10.0 * delta;
-        velocity.y -= velocity.y * 10.0 * delta;
-        velocity.z -= velocity.z * 10.0 * delta;
-        
-        direction.z = Number(moveForward) - Number(moveBackward);
-        direction.x = Number(moveRight) - Number(moveLeft);
-        direction.normalize();
-
+        velocity.x -= velocity.x * 10.0 * delta; velocity.y -= velocity.y * 10.0 * delta; velocity.z -= velocity.z * 10.0 * delta;
+        direction.z = Number(moveForward) - Number(moveBackward); direction.x = Number(moveRight) - Number(moveLeft); direction.normalize();
         if (moveForward || moveBackward) velocity.z -= direction.z * speed * delta;
         if (moveLeft || moveRight) velocity.x -= direction.x * speed * delta;
-        if (moveUp) velocity.y += speed * delta;
-        if (moveDown) velocity.y -= speed * delta;
-        
+        if (moveUp) velocity.y += speed * delta; if (moveDown) velocity.y -= speed * delta;
         if (isMobile) {
-            camera.rotation.y -= cameraLookSpeed.x;
-            camera.rotation.x -= cameraLookSpeed.y;
+            camera.rotation.y -= cameraLookSpeed.x; camera.rotation.x -= cameraLookSpeed.y;
             camera.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, camera.rotation.x));
-            cameraLookSpeed.x = 0;
-            cameraLookSpeed.y = 0;
+            cameraLookSpeed.x = 0; cameraLookSpeed.y = 0;
             const euler = new THREE.Euler(0, camera.rotation.y, 0, 'YXZ');
-            const forward = new THREE.Vector3(0, 0, -1).applyEuler(euler);
-            const right = new THREE.Vector3(1, 0, 0).applyEuler(euler);
-            camera.position.addScaledVector(forward, -velocity.z * delta);
-            camera.position.addScaledVector(right, -velocity.x * delta);
-            camera.position.y += velocity.y * delta;
-            if (camera.position.y < -45) { camera.position.y = -45; velocity.y = 0; }
+            const forward = new THREE.Vector3(0, 0, -1).applyEuler(euler); const right = new THREE.Vector3(1, 0, 0).applyEuler(euler);
+            camera.position.addScaledVector(forward, -velocity.z * delta); camera.position.addScaledVector(right, -velocity.x * delta);
+            camera.position.y += velocity.y * delta; 
+            if (camera.position.y < ground.position.y + playerEyeHeight) { camera.position.y = ground.position.y + playerEyeHeight; velocity.y = 0; }
         } else if (controls.isLocked) {
-            controls.moveRight(-velocity.x * delta);
-            controls.moveForward(-velocity.z * delta);
+            controls.moveRight(-velocity.x * delta); controls.moveForward(-velocity.z * delta);
             controls.getObject().position.y += velocity.y * delta;
-            if (controls.getObject().position.y < -45) { controls.getObject().position.y = -45; velocity.y = 0; }
+            if (controls.getObject().position.y < ground.position.y + playerEyeHeight) { controls.getObject().position.y = ground.position.y + playerEyeHeight; velocity.y = 0; }
         }
       }
 
-      // Update Companion Sphere
-      const targetPosition = new THREE.Vector3();
-      companionTarget.getWorldPosition(targetPosition);
-      companionSphere.position.lerp(targetPosition, 0.03);
-      companionSphere.position.y += Math.sin(time * 2.5) * 0.02;
-      companionSphere.position.x += Math.cos(time * 2.0) * 0.02;
-      companionSphere.lookAt(camera.position);
-      companionSphere.material.uniforms.uTime.value = time;
-      const currentSpeed = velocity.length();
-      companionSphere.material.uniforms.uSpeed.value = Math.min(currentSpeed / speed, 1.0);
-
-
-      // Interaction Raycast
-      raycaster.setFromCamera({ x: 0, y: 0 }, camera);
-      const intersects = raycaster.intersectObjects(interactiveObjects);
+      const targetPosition = new THREE.Vector3(); companionTarget.getWorldPosition(targetPosition);
+      companionSphere.position.lerp(targetPosition, 0.03); 
+      companionSphere.position.y += Math.sin(time * 2.5) * 0.02; companionSphere.position.x += Math.cos(time * 2.0) * 0.02;
+      companionSphere.lookAt(camera.position); 
+      companionSphere.material.emissiveIntensity = 0.1 + Math.sin(time * 5.0) * 0.1;
       
-      if (intersects.length > 0 && intersects[0].distance < 15 && !isTerminalActive) {
-          if (intersectedObject !== intersects[0].object) {
-              intersectedObject = intersects[0].object;
-          }
-          const objectLabel = intersectedObject.parent.children.find(c => c.isCSS2DObject)?.element.textContent || intersectedObject.parent.name;
-          if(isMobile){
-            interactBtnMobile.classList.remove('hidden');
-          } else {
-            crosshair.classList.add('interactive');
-            interactionPrompt.classList.add('visible');
-            interactionText.textContent = `Взаимодействовать с "${objectLabel}"`;
-          }
-      } else {
-          intersectedObject = null;
-          if(isMobile){
-            interactBtnMobile.classList.add('hidden');
-          } else {
-            crosshair.classList.remove('interactive');
-            interactionPrompt.classList.remove('visible');
-          }
-      }
-
-      composer.render();
-      labelRenderer.render(scene, camera);
-      css3dRenderer.render(scene, camera);
+      composer.render(); labelRenderer.render(scene, camera); css3dRenderer.render(scene, camera);
     }
 
-    // --- Window Resize ---
     window.addEventListener('resize', () => {
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
-      composer.setSize(window.innerWidth, window.innerHeight);
-      labelRenderer.setSize(window.innerWidth, window.innerHeight);
-      css3dRenderer.setSize(window.innerWidth, window.innerHeight);
-      fractalMaterial.uniforms.uResolution.value.set(window.innerWidth, window.innerHeight);
+      camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight); composer.setSize(window.innerWidth, window.innerHeight);
+      labelRenderer.setSize(window.innerWidth, window.innerHeight); css3dRenderer.setSize(window.innerWidth, window.innerHeight);
     });
 
-    // --- Modal Logic & Data ---
-    const modalContainer = document.getElementById('modal-container');
-    const modalContent = document.getElementById('modal-content');
-
-    function getDifficultyClass(level) {
-        return `difficulty-${level.replace(' ', '_').replace('/', '\\/')}`;
-    }
-
+    const modalContainer = document.getElementById('modal-container'); const modalContent = document.getElementById('modal-content');
+    function getDifficultyClass(level) { return `difficulty-${level.replace(' ', '_').replace('/', '\\/')}`; }
     function activateTerminal(terminalGroup) {
       isTerminalActive = true;
-      if (isMobile) {
-        document.getElementById('mobile-controls').classList.add('hidden');
-        document.getElementById('terminal-exit-btn-mobile').classList.remove('hidden');
-      } else {
-        controls.unlock();
-        document.getElementById('terminal-exit-prompt').classList.remove('hidden');
-      }
-      const iframeContainer = terminalGroup.userData.iframeContainer;
-      iframeContainer.style.pointerEvents = 'auto';
-      const iframe = iframeContainer.querySelector('iframe');
-      if (iframe) {
-        iframe.focus();
-      }
+      if (isMobile) { document.getElementById('mobile-controls').classList.add('hidden'); document.getElementById('terminal-exit-btn-mobile').classList.remove('hidden'); }
+      else { controls.unlock(); document.getElementById('terminal-exit-prompt').classList.remove('hidden'); }
+      const iframeContainer = terminalGroup.userData.iframeContainer; iframeContainer.style.pointerEvents = 'auto';
+      const iframe = iframeContainer.querySelector('iframe'); if (iframe) iframe.focus();
       css3dRenderer.domElement.style.zIndex = '9';
     }
-
     function deactivateTerminal() {
       isTerminalActive = false;
-      if (isMobile) {
-        document.getElementById('mobile-controls').classList.remove('hidden');
-        document.getElementById('terminal-exit-btn-mobile').classList.add('hidden');
-      } else {
-        controls.lock();
-        document.getElementById('terminal-exit-prompt').classList.add('hidden');
-      }
+      if (isMobile) { document.getElementById('mobile-controls').classList.remove('hidden'); document.getElementById('terminal-exit-btn-mobile').classList.add('hidden'); }
+      else { controls.lock(); document.getElementById('terminal-exit-prompt').classList.add('hidden'); }
       const terminalObj = scene.getObjectByName('Терминал');
-      if (terminalObj) {
-          terminalObj.userData.iframeContainer.style.pointerEvents = 'none';
-      }
+      if (terminalObj) terminalObj.userData.iframeContainer.style.pointerEvents = 'none';
       css3dRenderer.domElement.style.zIndex = '0';
     }
-
     function openModalForObject(object) {
         const dataKey = object.userData.dataKey;
-        
-        if (dataKey === 'monitor') {
-            activateTerminal(object.parent);
-            return;
-        }
-
-        if (!isMobile) {
-          controls.unlock();
-        }
-
-        let contentHTML = `
-            <button id="modal-close" class="modal-close-btn" aria-label="Закрыть">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-            </button>
-        `;
-
+        if (dataKey === 'monitor') { activateTerminal(object.parent); return; }
+        if (!isMobile) controls.unlock();
+        let contentHTML = `<button id="modal-close" class="modal-close-btn" aria-label="Закрыть"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>`;
         switch(dataKey) {
             case 'tricks':
                 contentHTML += `<h2 class="section-title">Библиотека Трюков</h2>`;
@@ -1379,28 +1106,16 @@
                 contentHTML += `<div class="card text-center text-lg"><p class="text-xl text-gray-200 mb-4">Готов начать? Первое занятие бесплатно!</p><p class="text-gray-300"><strong>Адрес:</strong> г. Москва, ул. Спортивная, 1</p><p class="text-gray-300 mt-1"><strong>Телефон:</strong> +7 (495) 123-45-67</p><p class="text-gray-300 mt-1"><strong>Email:</strong> info@womba-tricking.ru</p><div class="mt-6 flex justify-center space-x-4"><a href="#" class="text-gray-400 hover:text-white transition">VK</a><a href="#" class="text-gray-400 hover:text-white transition">Telegram</a><a href="#" class="text-gray-400 hover:text-white transition">YouTube</a></div></div>`;
                 break;
         }
-
         modalContent.innerHTML = contentHTML;
         modalContainer.classList.add('visible');
-        
         document.getElementById('modal-close').addEventListener('click', closeModal);
     }
-
     function closeModal() {
         modalContainer.classList.remove('visible');
-        if (!isTerminalActive && !isMobile) {
-            controls.lock();
-        }
+        if (!isTerminalActive && !isMobile) { controls.lock(); }
     }
-
-    modalContainer.addEventListener('click', (e) => {
-        if (e.target === modalContainer) {
-            closeModal();
-        }
-    });
-
+    modalContainer.addEventListener('click', (e) => { if (e.target === modalContainer) { closeModal(); } });
     animate();
   </script>
-
 </body>
 </html>
