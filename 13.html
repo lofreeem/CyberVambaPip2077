@@ -511,7 +511,7 @@
       vertexShader: `varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 ); }`,
       fragmentShader: `
         uniform sampler2D tDiffuse; uniform float uTime; uniform float uAberrationAmount; varying vec2 vUv;
-        float rand(vec2 n) { return fract(sin(dot(n, vec2(12.9898, 4.1414))) * 43758.5453)); }
+        float rand(vec2 n) { return fract(sin(dot(n, vec2(12.9898, 4.1414))) * 43758.5453); }
         void main() {
           vec2 R_uv = vUv + vec2(uAberrationAmount, 0.0); vec2 B_uv = vUv - vec2(uAberrationAmount, 0.0);
           float R = texture2D(tDiffuse, R_uv).r; float G = texture2D(tDiffuse, vUv).g; float B = texture2D(tDiffuse, B_uv).b;
@@ -686,8 +686,8 @@
             const vec3 horizonColor = vec3(0.7, 0.5, 0.3);
             const vec3 sunColor = vec3(1.0, 0.9, 0.7);
 
-            const float cloudCover = 0.55;
-            const float cloudSharpness = 0.2;
+            const float cloudCover = 0.45;
+            const float cloudSharpness = 0.3;
             const float cloudSpeed = 0.02;
 
             void main() {
@@ -701,24 +701,15 @@
                 vec3 finalColor = mix(baseSky, sunColor, pow(sunHalo, 15.0));
                 
                 if (viewDir.y > 0.0) {
-                    // Main clouds
-                    vec2 cloudUV1 = viewDir.xz / (viewDir.y * 1.5 + 0.2);
-                    cloudUV1.x += uTime * cloudSpeed;
+                    vec2 cloudUV = viewDir.xz / (viewDir.y * 1.5 + 0.2);
+                    cloudUV.x += uTime * cloudSpeed;
                     
-                    float cloudBase1 = fbm(cloudUV1 * 0.1, 6);
-                    float cloudDetail1 = fbm(cloudUV1 * 0.7 + cloudBase1 * 0.2, 5);
-                    float cloudMap1 = cloudBase1 + cloudDetail1 * 0.2;
+                    float cloudBase = fbm(cloudUV * 0.1, 6);
+                    float cloudDetail = fbm(cloudUV * 0.7 + cloudBase * 0.2, 5);
+                    float cloudMap = cloudBase + cloudDetail * 0.2;
                     
-                    float coverage1 = smoothstep(1.0 - cloudCover - cloudSharpness, 1.0 - cloudCover, cloudMap1);
+                    float coverage = smoothstep(1.0 - cloudCover - cloudSharpness, 1.0 - cloudCover, cloudMap);
                     
-                    // Wispy upper clouds
-                    vec2 cloudUV2 = viewDir.xz / (viewDir.y * 1.2 + 0.1);
-                    cloudUV2.x += uTime * cloudSpeed * 2.5;
-                    float cloudMap2 = fbm(cloudUV2 * 0.35, 5);
-                    float coverage2 = smoothstep(0.55, 0.7, cloudMap2) * 0.6;
-                    
-                    float totalCoverage = clamp(coverage1 + coverage2, 0.0, 1.0);
-
                     vec3 cloudColor = vec3(1.0);
                     
                     float g = 0.75;
@@ -731,7 +722,7 @@
                     float heightFactor = smoothstep(0.0, 0.1, viewDir.y);
                     litCloudColor = mix(litCloudColor * 0.65, litCloudColor, heightFactor);
                     
-                    finalColor = mix(finalColor, litCloudColor, totalCoverage * heightFactor * 0.9);
+                    finalColor = mix(finalColor, litCloudColor, coverage * heightFactor * 0.9);
                 }
                 
                 gl_FragColor = vec4(finalColor, 1.0);
