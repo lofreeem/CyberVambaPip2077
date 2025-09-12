@@ -1,304 +1,1486 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Vamba — 3D Luxe Brand (RU)</title>
-  <meta name="description" content="Одностраничный 3D-сайт уровня топ-брендов: стекло, иридесценция, блум, кино-зерно, частицы и невозможная геометрия. Всё бесплатно и в одном файле." />
-  <meta property="og:title" content="Vamba — 3D Luxe Brand (RU)" />
-  <meta property="og:description" content="WebGL/Three.js + постобработка, супер-гладкие анимации, русская версия. by Vamba." />
-  <meta property="og:type" content="website" />
+  <title>Womba Tricking - 3D Experience</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+  <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;500;800&display=swap" rel="stylesheet">
-  <!-- CDN: Three.js + PostProcessing + GSAP -->
-  <script src="https://unpkg.com/three@0.154.0/build/three.min.js"></script>
-  <script src="https://unpkg.com/three@0.154.0/examples/js/controls/OrbitControls.js"></script>
-  <script src="https://unpkg.com/three@0.154.0/examples/js/postprocessing/EffectComposer.js"></script>
-  <script src="https://unpkg.com/three@0.154.0/examples/js/postprocessing/RenderPass.js"></script>
-  <script src="https://unpkg.com/three@0.154.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
-  <script src="https://unpkg.com/three@0.154.0/examples/js/postprocessing/FilmPass.js"></script>
-  <script src="https://unpkg.com/three@0.154.0/examples/js/shaders/CopyShader.js"></script>
-  <script src="https://unpkg.com/three@0.154.0/examples/js/postprocessing/ShaderPass.js"></script>
-  <script src="https://unpkg.com/gsap@3.12.2/dist/gsap.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Exo+2:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
   <style>
-    :root{--bg:#07090c;--fg:#e7ebf2;--muted:#8a93a6;--accent:#8ab4ff;--accent2:#b388ff}
-    *{box-sizing:border-box}
-    html,body{height:100%;margin:0;background:radial-gradient(1200px 800px at 80% -10%, #122036 0%, #0a0f18 40%, var(--bg) 100%);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial;color:var(--fg);overflow-x:hidden}
-    a{color:inherit;text-decoration:none}
-    .noise::before{content:"";position:fixed;inset:0;pointer-events:none;mix-blend-mode:overlay;opacity:.06;background-image:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="140" height="140"><filter id="n"><feTurbulence baseFrequency=".65" numOctaves="2" seed="3"/></filter><rect width="100%" height="100%" filter="url(%23n)"/></svg>');background-size:140px 140px}
-    header{position:fixed;top:16px;left:16px;right:16px;z-index:50;display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-radius:16px;backdrop-filter:blur(10px);background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.02));border:1px solid rgba(255,255,255,.08)}
-    .brand{display:flex;gap:12px;align-items:center}
-    .logo{width:44px;height:44px;border-radius:12px;background:conic-gradient(from 120deg,var(--accent),var(--accent2),var(--accent));display:flex;align-items:center;justify-content:center;font-weight:800;color:#071020;box-shadow:0 8px 30px rgba(139,180,255,.18)}
-    nav{display:flex;gap:8px;align-items:center}
-    .btn{padding:10px 14px;border-radius:12px;border:1px solid rgba(255,255,255,.08);backdrop-filter:blur(8px);background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.015));cursor:pointer;font-weight:700;transition:transform .2s,box-shadow .2s}
-    .btn:hover{transform:translateY(-2px);box-shadow:0 12px 34px rgba(138,180,255,.22)}
-    main{display:grid;grid-template-columns:1fr 420px;gap:28px;padding:120px 48px;min-height:100vh}
-    .hero{position:relative;min-height:680px;border-radius:22px;padding:28px;overflow:hidden}
-    canvas{display:block;width:100%;height:100%;border-radius:20px}
-    .overlay{position:absolute;inset:24px;border-radius:16px;pointer-events:none}
-    .title{position:absolute;left:48px;top:48px;z-index:30;max-width:640px}
-    h1{font-size:64px;line-height:1;margin:0;font-weight:800;letter-spacing:-1px;text-shadow:0 10px 40px rgba(138,180,255,.25)}
-    p.lead{margin:14px 0 0;color:var(--muted);font-size:16px}
-    .links{position:sticky;top:96px;align-self:start;padding:18px;border-radius:16px;background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.012));border:1px solid rgba(255,255,255,.06);backdrop-filter:blur(8px);transform-style:preserve-3d;perspective:800px}
-    .links h3{margin:0 0 12px 0}
-    .link-card{display:flex;gap:12px;align-items:center;padding:10px;border-radius:12px;margin-bottom:10px;transition:transform .25s,box-shadow .25s;cursor:pointer;transform-style:preserve-3d;box-shadow:0 6px 20px rgba(0,0,0,.2);border:1px solid rgba(255,255,255,.05);background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.02))}
-    .link-card:hover{transform:translateY(-6px) rotateX(6deg) rotateY(-6deg);box-shadow:0 18px 60px rgba(138,180,255,.22)}
-    .thumb{width:72px;height:54px;border-radius:8px;object-fit:cover;flex-shrink:0;box-shadow:0 4px 16px rgba(0,0,0,.25)}
-    .meta{font-size:13px}
-    .meta .title{font-weight:800}
-    .meta .desc{color:var(--muted);font-size:12px}
-    footer{position:fixed;left:16px;bottom:16px;right:16px;padding:12px;border-radius:12px;display:flex;justify-content:space-between;align-items:center;backdrop-filter:blur(6px);background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.012));border:1px solid rgba(255,255,255,.05)}
-    .impossible{position:absolute;right:40px;bottom:40px;width:220px;height:220px;z-index:40;pointer-events:auto}
-    .impossible svg{width:100%;height:100%}
-    @media (max-width:1100px){main{grid-template-columns:1fr;padding:100px 20px} .links{position:relative;top:auto;margin-top:18px} h1{font-size:44px}}
+    :root {
+      --primary-glow: #3b82f6;
+      --secondary-glow: #8b5cf6;
+      --card-bg: rgba(17, 24, 39, 0.7);
+    }
+    body {
+      margin: 0;
+      overflow: hidden;
+      font-family: 'Exo 2', sans-serif;
+      background-color: #000;
+      color: #e5e7eb;
+    }
+    #webgl-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      outline: none;
+    }
+    #overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.7);
+      color: white;
+      text-align: center;
+      cursor: pointer;
+      z-index: 100;
+      transition: opacity 0.5s;
+    }
+    #overlay h1 {
+        font-size: 4rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        text-shadow: 0 0 15px var(--primary-glow), 0 0 30px var(--primary-glow);
+        animation: glitch 2.5s linear infinite;
+    }
+    #overlay p {
+        margin-top: 1rem;
+        font-size: 1.2rem;
+    }
+    kbd {
+        display: inline-block;
+        padding: 0.2rem 0.5rem;
+        background-color: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255,255,255,0.2);
+        border-radius: 4px;
+        font-family: monospace;
+        font-weight: bold;
+    }
+    @keyframes glitch {
+      2%,64% { transform: translate(2px,0) skew(0deg); }
+      4%,60% { transform: translate(-2px,0) skew(0deg); }
+      62% { transform: translate(0,0) skew(5deg); }
+    }
+    .hud {
+        position: fixed;
+        color: white;
+        pointer-events: none;
+        width: 100%;
+        height: 100%;
+        z-index: 10;
+    }
+    .crosshair {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 4px;
+        height: 4px;
+        background-color: rgba(255, 255, 255, 0.5);
+        border-radius: 50%;
+        transform: translate(-50%, -50%);
+        transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    .crosshair.interactive {
+        transform: translate(-50%, -50%) scale(2.5);
+        background-color: rgba(139, 92, 246, 0.9);
+    }
+    .interaction-prompt {
+        position: absolute;
+        bottom: 10%;
+        left: 50%;
+        transform: translateX(-50%);
+        background-color: rgba(0,0,0,0.5);
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        font-size: 1rem;
+        opacity: 0;
+        transition: opacity 0.3s;
+        border: 1px solid rgba(255,255,255,0.2);
+    }
+    .interaction-prompt.visible {
+        opacity: 1;
+    }
+    
+    /* Modal styles */
+    .modal-container {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.3s ease;
+        z-index: 200;
+    }
+    .modal-container.visible {
+        opacity: 1;
+        pointer-events: auto;
+    }
+    .modal-content {
+        background-color: var(--card-bg);
+        backdrop-filter: blur(12px);
+        border: 1px solid var(--secondary-glow);
+        border-radius: 12px;
+        width: 90%;
+        max-width: 800px;
+        height: 80%;
+        max-height: 700px;
+        padding: 2rem;
+        overflow-y: auto;
+        transform: scale(0.95);
+        transition: transform 0.3s ease;
+        box-shadow: 0 0 40px rgba(139, 92, 246, 0.3);
+        position: relative;
+        overflow-x: hidden;
+    }
+    .modal-content::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(to bottom, rgba(255,255,255,0) 0%, rgba(255,255,255,0.03) 50%, rgba(255,255,255,0) 100%);
+        background-size: 100% 4px;
+        animation: scanlines 10s linear infinite;
+        pointer-events: none;
+    }
+    @keyframes scanlines {
+        from { background-position: 0 0; }
+        to { background-position: 0 -40px; }
+    }
+    .modal-container.visible .modal-content {
+        transform: scale(1);
+    }
+    .modal-content::-webkit-scrollbar { width: 6px; }
+    .modal-content::-webkit-scrollbar-track { background: transparent; }
+    .modal-content::-webkit-scrollbar-thumb { background: var(--secondary-glow); border-radius: 3px; }
+
+    .modal-close-btn {
+        position: absolute;
+        top: 1rem; right: 1rem;
+        background: rgba(255,255,255,0.1);
+        border-radius: 50%;
+        width: 32px; height: 32px;
+        display: flex; align-items: center; justify-content: center;
+        color: #fff;
+        border: 1px solid rgba(255,255,255,0.2);
+        transition: all 0.2s;
+        z-index: 10;
+    }
+    .modal-close-btn:hover {
+        background: var(--secondary-glow);
+        transform: rotate(90deg);
+    }
+    .section-title {
+        background: linear-gradient(90deg, #fff, #aaa);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        filter: drop-shadow(0 0 10px var(--primary-glow));
+        font-size: 2.5rem;
+        font-weight: bold;
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+    .card {
+        background: rgba(255,255,255,0.05);
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        border: 1px solid rgba(255,255,255,0.1);
+    }
+     .get-difficulty-class {
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        display: inline-block;
+        white-space: nowrap;
+     }
+    .difficulty-Новичок { background-color: rgba(74, 222, 128, 0.2); color: #86efac; border: 1px solid rgba(74, 222, 128, 0.3); }
+    .difficulty-Средний { background-color: rgba(96, 165, 250, 0.2); color: #93c5fd; border: 1px solid rgba(96, 165, 250, 0.3); }
+    .difficulty-Продвинутый, .difficulty-Средний\/Продвинутый { background-color: rgba(248, 113, 113, 0.2); color: #fca5a5; border: 1px solid rgba(248, 113, 113, 0.3); }
+    .difficulty-Все, .difficulty-Все_уровни { background-color: rgba(139, 92, 246, 0.2); color: #c4b5fd; border: 1px solid rgba(139, 92, 246, 0.3); }
+
+    .css2d-label {
+        color: #fff;
+        font-size: 24px;
+        font-weight: 600;
+        padding: 10px;
+        background: rgba(0, 0, 0, 0.6);
+        border-radius: 5px;
+        text-shadow: 0 0 5px var(--secondary-glow);
+        pointer-events: none;
+    }
+
+    /* Mobile Controls */
+    #mobile-controls.hidden { display: none; }
+    .joystick-zone {
+        position: absolute;
+        width: 150px;
+        height: 150px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 50%;
+        border: 2px solid rgba(255, 255, 255, 0.2);
+        pointer-events: auto;
+    }
+    .joystick-handle {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 60px;
+        height: 60px;
+        background: rgba(255, 255, 255, 0.3);
+        border-radius: 50%;
+        transform: translate(-50%, -50%);
+        transition: transform 0.1s;
+    }
+    .mobile-btn {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.2);
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        color: white;
+        font-size: 24px;
+        font-weight: bold;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        pointer-events: auto;
+        user-select: none;
+        -webkit-user-select: none;
+    }
+    .mobile-btn:active {
+        background: rgba(255, 255, 255, 0.4);
+    }
+    .interact-btn-main {
+        position: absolute;
+        bottom: 25%;
+        left: 50%;
+        transform: translateX(-50%);
+        width: auto;
+        padding: 15px 25px;
+        border-radius: 30px;
+        font-size: 16px;
+        font-weight: 600;
+        background-color: var(--secondary-glow);
+        border: none;
+        box-shadow: 0 0 20px var(--secondary-glow);
+    }
+    .interact-btn-main.hidden {
+      display: none;
+    }
+
+    /* Responsive adjustments */
+    @media (hover: none) and (pointer: coarse) {
+        #desktop-keys { display: none; }
+        #mobile-instructions { display: block !important; }
+        .interaction-prompt { display: none; }
+        .crosshair { display: none; }
+    }
+
   </style>
 </head>
-<body class="noise" aria-label="Vamba 3D site">
-  <header role="banner">
-    <div class="brand">
-      <div class="logo" aria-hidden="true">V</div>
-      <div>
-        <div style="font-weight:800">Vamba</div>
-        <div style="font-size:12px;color:var(--muted)">3D — Только бесплатные технологии</div>
-      </div>
+<body>
+  <div id="overlay">
+    <h1>WOMBA</h1>
+    <p id="overlay-prompt">Кликните, чтобы войти в 3D-пространство</p>
+    <div id="desktop-keys" class="mt-8 text-gray-400 space-y-2">
+        <p><kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> - Горизонтальное движение</p>
+        <p><kbd>Space</kbd> / <kbd>Shift</kbd> - Вверх / Вниз</p>
+        <p><kbd>Мышь</kbd> - Осмотр</p>
     </div>
-    <nav aria-label="Главное меню">
-      <a class="btn" href="#links" aria-label="Полезные ссылки">Полезные</a>
-      <a class="btn" href="#repo" aria-label="Посмотреть на GitHub">View on GitHub</a>
-    </nav>
-  </header>
+    <div id="mobile-instructions" class="hidden mt-8 text-gray-400 space-y-2">
+        <p>Используйте левый джойстик для движения</p>
+        <p>Проведите по правой части экрана для осмотра</p>
+        <p>Используйте кнопки для полета вверх/вниз</p>
+    </div>
+  </div>
 
-  <main>
-    <section class="hero" aria-labelledby="main-title">
-      <canvas id="scene" aria-label="3D-сцена"></canvas>
-      <div class="overlay" aria-hidden="true">
-        <div class="title" id="main-title">
-          <h1>Vamba — 3D Luxe: невозможное, стекло и блеск уровня брендов</h1>
-          <p class="lead">Русская версия. Ультра гладкие материалы, иридесценция, блум, кино-зерно и «невозможная» геометрия. Всё в одном файле и бесплатно.</p>
-        </div>
-        <div class="impossible" title="Невозможный объект (визуальная иллюзия)">
-          <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Невозможный треугольник">
-            <defs>
-              <linearGradient id="g" x1="0" x2="1">
-                <stop offset="0" stop-color="#8ab4ff" />
-                <stop offset="1" stop-color="#b388ff" />
-              </linearGradient>
-            </defs>
-            <path d="M30 30 L170 30 L100 170 Z" fill="none" stroke="url(#g)" stroke-width="14" stroke-linejoin="round" stroke-linecap="round" />
-            <path d="M60 60 L140 60 L100 140 Z" fill="none" stroke="#071020" stroke-width="14" stroke-linejoin="round" stroke-linecap="round" opacity="0.12" />
-          </svg>
-        </div>
+  <div class="hud">
+    <div class="crosshair"></div>
+    <div class="interaction-prompt"><span id="interaction-text"></span> [<kbd>E</kbd>]</div>
+  </div>
+  
+  <div id="modal-container" class="modal-container">
+      <div id="modal-content" class="modal-content">
+          <!-- Content will be injected here -->
       </div>
-    </section>
+  </div>
 
-    <aside class="links" id="links" aria-label="Список полезных ссылок">
-      <h3>Полезные ресурсы — всё бесплатно</h3>
-      <a class="link-card" href="https://threejs.org/" target="_blank" rel="noopener" aria-label="Three.js — Документация">
-        <img class="thumb" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0MDAgMzAwIiBmaWxsPSJub25lIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgZmlsbD0iIzA3MDkwYyIvPjx0ZXh0IHg9IjUwIiB5PSIxNTAiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIyNCIgZmlsbD0iI2U3ZWJmMiI+VGhyZWUuanM8L3RleHQ+PC9zdmc+" alt="Three.js" />
-        <div class="meta"><div class="title">Three.js — WebGL для людей</div><div class="desc">Официальная документация и примеры.</div></div>
-      </a>
-      <a class="link-card" href="https://greensock.com/" target="_blank" rel="noopener" aria-label="GSAP — Анимации">
-        <img class="thumb" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0MDAgMzAwIiBmaWxsPSJub25lIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgZmlsbD0iIzA3MDkwYyIvPjx0ZXh0IHg9IjUwIiB5PSIxNTAiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIyNCIgZmlsbD0iI2U3ZWJmMiI+R1NBUDwvdGV4dD48L3N2Zz4=" alt="GSAP" />
-        <div class="meta"><div class="title">GSAP — плавные анимации</div><div class="desc">Профессиональные таймлайны и спринги (осн. часть бесплатна).</div></div>
-      </a>
-      <a class="link-card" href="https://developer.mozilla.org/ru/" target="_blank" rel="noopener" aria-label="MDN Web Docs">
-        <img class="thumb" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0MDAgMzAwIiBmaWxsPSJub25lIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgZmlsbD0iIzA3MDkwYyIvPjx0ZXh0IHg9IjUwIiB5PSIxNTAiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIyNCIgZmlsbD0iI2U3ZWJmMiI+TUROPC90ZXh0Pjwvc3ZnPg==" alt="MDN" />
-        <div class="meta"><div class="title">MDN — справочник по веб-технологиям</div><div class="desc">HTML, CSS, JS и WebGL.</div></div>
-      </a>
-      <a class="link-card" href="https://webglfundamentals.org/" target="_blank" rel="noopener" aria-label="WebGL Fundamentals">
-        <img class="thumb" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0MDAgMzAwIiBmaWxsPSJub25lIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgZmlsbD0iIzA3MDkwYyIvPjx0ZXh0IHg9IjUwIiB5PSIxNTAiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIyNCIgZmlsbD0iI2U3ZWJmMiI+V2ViR0wgRnVuZGFtZW50YWxzPC90ZXh0Pjwvc3ZnPg==" alt="WebGL Fundamentals" />
-        <div class="meta"><div class="title">WebGL Fundamentals</div><div class="desc">Низкоуровневые основы 3D на вебе.</div></div>
-      </a>
-      <a class="link-card" href="https://unsplash.com/" target="_blank" rel="noopener" aria-label="Unsplash — бесплатные картинки">
-        <img class="thumb" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0MDAgMzAwIiBmaWxsPSJub25lIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgZmlsbD0iIzA3MDkwYyIvPjx0ZXh0IHg9IjUwIiB5PSIxNTAiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIyNCIgZmlsbD0iI2U3ZWJmMiI+VW5zcGxhc2g8L3RleHQ+PC9zdmc+" alt="Unsplash" />
-        <div class="meta"><div class="title">Unsplash — бесплатные изображения</div><div class="desc">Фото для превью и карточек.</div></div>
-      </a>
-      <a class="link-card" href="https://fonts.google.com/" target="_blank" rel="noopener" aria-label="Google Fonts">
-        <img class="thumb" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0MDAgMzAwIiBmaWxsPSJub25lIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgZmlsbD0iIzA3MDkwYyIvPjx0ZXh0IHg9IjUwIiB5PSIxNTAiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIyNCIgZmlsbD0iI2U3ZWJmMiI+R29vZ2xlIEZvbnRzPC90ZXh0Pjwvc3ZnPg==" alt="Google Fonts" />
-        <div class="meta"><div class="title">Google Fonts</div><div class="desc">Бесплатные шрифты: Inter и др.</div></div>
-      </a>
-      <a class="link-card" href="https://github.com/" target="_blank" rel="noopener" aria-label="GitHub">
-        <img class="thumb" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0MDAgMzAwIiBmaWxsPSJub25lIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgZmlsbD0iIzA3MDkwYyIvPjx0ZXh0IHg9IjUwIiB5PSIxNTAiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIyNCIgZmlsbD0iI2U3ZWJmMiI+R2l0SHViPC90ZXh0Pjwvc3ZnPg==" alt="GitHub" />
-        <div class="meta"><div class="title">GitHub — разместите сайт</div><div class="desc">Публикация через GitHub Pages: один файл — и онлайн.</div></div>
-      </a>
-      <a class="link-card" href="https://css-tricks.com/" target="_blank" rel="noopener" aria-label="CSS-Tricks">
-        <img class="thumb" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0MDAgMzAwIiBmaWxsPSJub25lIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgZmlsbD0iIzA3MDkwYyIvPjx0ZXh0IHg9IjUwIiB5PSIxNTAiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIyNCIgZmlsbD0iI2U3ZWJmMiI+Q1NTLVRyaWNrczwvdGV4dD48L3N2Zz4=" alt="CSS-Tricks" />
-        <div class="meta"><div class="title">CSS-Tricks</div><div class="desc">Фишки, эффекты и гайды по CSS.</div></div>
-      </a>
-    </aside>
-  </main>
+  <div id="mobile-controls" class="hidden">
+    <div id="joystick-move-zone" class="joystick-zone" style="left: 20px; bottom: 20px;">
+        <div id="joystick-move-handle" class="joystick-handle"></div>
+    </div>
+    <div id="action-buttons" style="position: absolute; right: 20px; bottom: 20px; display: flex; flex-direction: column; gap: 15px;">
+        <button id="move-up-btn" class="mobile-btn">▲</button>
+        <button id="move-down-btn" class="mobile-btn">▼</button>
+    </div>
+    <button id="interact-btn" class="mobile-btn interact-btn-main hidden">Взаимодействовать</button>
+  </div>
 
-  <footer>
-    <div>© Vamba — Бесплатный 3D-шаблон. <a id="repo" href="#repo" style="margin-left:8px;color:var(--accent)">Ссылка на репозиторий</a></div>
-    <div style="font-size:13px;color:var(--muted)">Готово к деплою на GitHub Pages</div>
-  </footer>
 
-  <script>
-    // ------------------------
-    // 3D сцена «люкс»: стекло, иридесценция, блум, кино-зерно, частицы
-    // ------------------------
-    const canvas = document.getElementById('scene');
-    const renderer = new THREE.WebGLRenderer({canvas, antialias:true, alpha:true});
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.setSize(canvas.clientWidth || 800, canvas.clientHeight || 600, false);
-    renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.25;
-    renderer.outputColorSpace = THREE.SRGBColorSpace;
+  <canvas id="webgl-canvas"></canvas>
 
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.164.1/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.164.1/examples/jsm/"
+      }
+    }
+  </script>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
+    import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+    import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+    import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+    import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+    // --- Scene Setup ---
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 1000);
-    camera.position.set(0,0,8);
+    scene.fog = new THREE.FogExp2(0x000000, 0.0025);
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
+    camera.position.z = 10;
+    const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('webgl-canvas'), antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5)); // Optimization: Cap pixel ratio
+    renderer.toneMapping = THREE.ReinhardToneMapping;
 
-    // Свет и настроение
-    const hemi = new THREE.HemisphereLight(0xffffff, 0x0a0f18, 0.65); scene.add(hemi);
-    const dir = new THREE.DirectionalLight(0xffffff, 1.0); dir.position.set(5,10,7); scene.add(dir);
+    // --- CSS2D Renderer for labels ---
+    const labelRenderer = new CSS2DRenderer();
+    labelRenderer.setSize(window.innerWidth, window.innerHeight);
+    labelRenderer.domElement.style.position = 'absolute';
+    labelRenderer.domElement.style.top = '0px';
+    labelRenderer.domElement.style.pointerEvents = 'none';
+    document.body.appendChild(labelRenderer.domElement);
 
-    // Материал с «дорогим» переливом для Пенроуза
-    const mat = new THREE.MeshPhysicalMaterial({
-      color:0xffffff, metalness:0.92, roughness:0.08,
-      reflectivity:1, clearcoat:1, clearcoatRoughness:0.05,
-      iridescence:1, iridescenceIOR:1.3, sheen:1
-    });
+    // --- Post-processing (Bloom) ---
+    const renderScene = new RenderPass(scene, camera);
+    const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
+    bloomPass.threshold = 0.1; // Optimization: Increased threshold
+    bloomPass.strength = 0.7; // Optimization: Reduced bloom strength
+    bloomPass.radius = 0.35; // Optimization: Reduced bloom radius
+    const composer = new EffectComposer(renderer);
+    composer.addPass(renderScene);
+    composer.addPass(bloomPass);
 
-    // Классический невозможный треугольник Пенроуза (3 «балки»)
-    const penrose = new THREE.Group();
-    const barLen = 3.2, barThick = 0.5;
-    const barGeo = new THREE.BoxGeometry(barLen, barThick, barThick);
-
-    const b1 = new THREE.Mesh(barGeo, mat);
-    b1.rotation.z = Math.PI/2; b1.position.set(0, barLen/2 - barThick/2, 0);
-
-    const b2 = new THREE.Mesh(barGeo, mat);
-    b2.rotation.z = Math.PI; b2.rotation.y = -Math.PI/3; b2.position.set(-barLen/4, -Math.sqrt(3)*barLen/4, 0);
-
-    const b3 = new THREE.Mesh(barGeo, mat);
-    b3.rotation.y = Math.PI/3; b3.position.set(barLen/4, -Math.sqrt(3)*barLen/4, 0);
-
-    // Фаски-иллюзии: тонкие «накладки», чтобы сходилось «невозможно»
-    const capGeo = new THREE.CylinderGeometry(barThick*0.52, barThick*0.52, barThick*0.4, 24);
-    const c1 = new THREE.Mesh(capGeo, mat); c1.rotation.x = Math.PI/2; c1.position.copy(b1.position);
-    const c2 = new THREE.Mesh(capGeo, mat); c2.rotation.x = Math.PI/2; c2.position.copy(b2.position);
-    const c3 = new THREE.Mesh(capGeo, mat); c3.rotation.x = Math.PI/2; c3.position.copy(b3.position);
-
-    penrose.add(b1,b2,b3,c1,c2,c3);
-    penrose.scale.set(1.15,1.15,1.15);
-    scene.add(penrose);
-
-    // Стеклянная «сфера-бриллиант» вокруг
-    const glassMat = new THREE.MeshPhysicalMaterial({
-      transmission:1, thickness:0.9, roughness:0.02, metalness:0,
-      ior:1.45, attenuationColor:new THREE.Color(0x8ab4ff), attenuationDistance:4,
-      reflectivity:1, clearcoat:1
-    });
-    const glass = new THREE.Mesh(new THREE.IcosahedronGeometry(2.4,3), glassMat); scene.add(glass);
-
-    // Динамическое отражение для стекла
-    const cubeRT = new THREE.WebGLCubeRenderTarget(256, { type: THREE.HalfFloatType, generateMipmaps:true });
-    const cubeCam = new THREE.CubeCamera(0.1, 50, cubeRT);
-    glassMat.envMap = cubeRT.texture;
-
-    // Частицы — «звёздная пыль»
-    const particlesCount = 1800;
-    const positions = new Float32Array(particlesCount*3);
-    for(let i=0;i<particlesCount;i++){
-      const r = 9 + Math.random()*10; const th = Math.random()*Math.PI*2;
-      positions[i*3] = Math.cos(th)*r*(0.6+Math.random()*0.8);
-      positions[i*3+1] = (Math.random()-0.5)*10;
-      positions[i*3+2] = Math.sin(th)*r*(0.6+Math.random()*0.8);
+    // --- Controls ---
+    let controls;
+    const overlay = document.getElementById('overlay');
+    if (isMobile) {
+        document.getElementById('mobile-controls').classList.remove('hidden');
+        document.getElementById('overlay-prompt').textContent = 'Нажмите, чтобы войти в 3D-пространство';
+        document.getElementById('mobile-instructions').classList.remove('hidden');
+    } else {
+        controls = new PointerLockControls(camera, renderer.domElement);
+        controls.addEventListener('lock', () => {
+          overlay.style.opacity = '0';
+          overlay.style.pointerEvents = 'none';
+        });
+        controls.addEventListener('unlock', () => {
+          overlay.style.opacity = '1';
+          overlay.style.pointerEvents = 'auto';
+        });
+        scene.add(controls.getObject());
     }
-    const pgeo = new THREE.BufferGeometry(); pgeo.setAttribute('position', new THREE.BufferAttribute(positions,3));
-    const pmaterial = new THREE.PointsMaterial({size:0.028, transparent:true, opacity:0.85});
-    const points = new THREE.Points(pgeo, pmaterial); scene.add(points);
-
-    // Постобработка: RenderPass + Bloom + Film (лёгкое кино-зерно)
-    const composer = new THREE.EffectComposer(renderer);
-    const renderPass = new THREE.RenderPass(scene, camera); composer.addPass(renderPass);
-    const bloom = new THREE.UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.95, 0.6, 0.85); composer.addPass(bloom);
-    const film = new THREE.FilmPass(0.2, 0.025, 648, false); composer.addPass(film);
-
-    // --- GOD RAYS (экрано-пространственные лучи) ---
-    const GodRaysShader = {
-      uniforms: {
-        tDiffuse: { value: null },
-        lightPosition: { value: new THREE.Vector2(0.5, 0.5) },
-        exposure: { value: 0.85 },
-        decay: { value: 0.95 },
-        density: { value: 0.9 },
-        weight: { value: 0.9 },
-        samples: { value: 80 }
-      },
-      vertexShader: `
-        varying vec2 vUv;
-        void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }
-      `,
-      fragmentShader: `
-        varying vec2 vUv;
-        uniform sampler2D tDiffuse;
-        uniform vec2 lightPosition;
-        uniform float exposure; uniform float decay; uniform float density; uniform float weight; uniform int samples;
-        void main(){
-          vec2 texCoord = vUv;
-          vec2 deltaTextCoord = (texCoord - lightPosition);
-          deltaTextCoord *= 1.0 / float(samples) * density;
-          vec3 color = texture2D(tDiffuse, texCoord).rgb;
-          vec3 illuminationDecay = vec3(1.0);
-          for(int i=0;i<200;i++){
-            if(i==samples) break;
-            texCoord -= deltaTextCoord;
-            vec3 sample = texture2D(tDiffuse, texCoord).rgb;
-            sample *= illuminationDecay * weight;
-            color += sample;
-            illuminationDecay *= decay;
-          }
-          color *= exposure;
-          gl_FragColor = vec4(color, 1.0);
+     overlay.addEventListener('click', () => {
+        if(isMobile) {
+            overlay.style.opacity = '0';
+            overlay.style.pointerEvents = 'none';
+        } else {
+            controls.lock();
         }
-      `
-    };
-    const godRaysPass = new THREE.ShaderPass(GodRaysShader);
-    composer.addPass(godRaysPass);
-
-    // Виртуальная позиция «солнца» (совмещаем с направленным источником света)
-    const penroseLightPos = new THREE.Vector3(5,10,7);
-
-    // Параллакс
-    const cursor = {x:0,y:0};
-    window.addEventListener('mousemove', (e)=>{ cursor.x = (e.clientX / window.innerWidth)*2-1; cursor.y = -(e.clientY / window.innerHeight)*2+1; });
-
-    // Влёт анимации - ИСПРАВЛЕНА ОШИБКА: заменен core на penrose
-    gsap.from([penrose.scale, glass.scale], {x:0.1,y:0.1,z:0.1, duration:1.6, ease:'elastic.out(1,0.6)', stagger:0.08});
-
-    // Ресайз
-    function onResize(){
-      const w = canvas.clientWidth || window.innerWidth; const h = canvas.clientHeight || window.innerHeight;
-      renderer.setSize(w,h,false); camera.aspect = w/h; camera.updateProjectionMatrix(); composer.setSize(w,h);
-    }
-    window.addEventListener('resize', onResize); onResize();
-
-    // Рендер-цикл
-    let t=0; function animate(){
-      t+=0.01;
-      // Плавная ротация невозможного треугольника
-      penrose.rotation.y += 0.005 + cursor.x*0.002; 
-      penrose.rotation.x += 0.003 + cursor.y*0.0015;
-      
-      glass.rotation.y -= 0.002; glass.rotation.x += 0.0015; points.rotation.y += 0.0007;
-      // Обновление отражений
-      glass.visible=false; cubeCam.update(renderer, scene); glass.visible=true;
-      // Обновление положения источника света для God Rays
-      const lightNDC = penroseLightPos.clone().project(camera);
-      godRaysPass.uniforms.lightPosition.value.set( (lightNDC.x+1)/2, (lightNDC.y+1)/2 );
-      composer.render(); requestAnimationFrame(animate);
-    } animate();
-
-    // Плавный скролл и 3D-наклон карточек ссылок
-    document.querySelectorAll('a[href^="#"]').forEach(a=>{a.addEventListener('click',(ev)=>{ev.preventDefault(); const id=a.getAttribute('href').slice(1); const el=document.getElementById(id); if(el) el.scrollIntoView({behavior:'smooth',block:'center'});});});
-    const cards = document.querySelectorAll('.link-card');
-    cards.forEach(card=>{
-      card.addEventListener('mousemove', (e)=>{ const r=card.getBoundingClientRect(); const cx=e.clientX-r.left, cy=e.clientY-r.top; const rx=((cy/r.height)-0.5)*-12; const ry=((cx/r.width)-0.5)*12; card.style.transform=`translateY(-6px) rotateX(${rx}deg) rotateY(${ry}deg)`; });
-      card.addEventListener('mouseleave', ()=>{ card.style.transform=''; });
     });
+
+
+    // --- Movement ---
+    const velocity = new THREE.Vector3();
+    const direction = new THREE.Vector3();
+    let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false, moveUp = false, moveDown = false;
+    let cameraLookSpeed = { x: 0, y: 0 };
+    
+    const onKeyDown = (event) => {
+      switch (event.code) {
+        case 'KeyW': case 'ArrowUp': moveForward = true; break;
+        case 'KeyA': case 'ArrowLeft': moveLeft = true; break;
+        case 'KeyS': case 'ArrowDown': moveBackward = true; break;
+        case 'KeyD': case 'ArrowRight': moveRight = true; break;
+        case 'Space': moveUp = true; break;
+        case 'ShiftLeft': case 'KeyC': moveDown = true; break;
+        case 'KeyE': if (intersectedObject) openModalForObject(intersectedObject); break;
+        case 'Escape': if (modalContainer.classList.contains('visible')) closeModal(); else if (!isMobile) controls.unlock(); break;
+      }
+    };
+    const onKeyUp = (event) => {
+      switch (event.code) {
+        case 'KeyW': case 'ArrowUp': moveForward = false; break;
+        case 'KeyA': case 'ArrowLeft': moveLeft = false; break;
+        case 'KeyS': case 'ArrowDown': moveBackward = false; break;
+        case 'KeyD': case 'ArrowRight': moveRight = false; break;
+        case 'Space': moveUp = false; break;
+        case 'ShiftLeft': case 'KeyC': moveDown = false; break;
+      }
+    };
+    document.addEventListener('keydown', onKeyDown);
+    document.addEventListener('keyup', onKeyUp);
+
+    // --- Mobile Touch Controls ---
+    if (isMobile) {
+        const moveStick = document.getElementById('joystick-move-handle');
+        const moveZone = document.getElementById('joystick-move-zone');
+        const upBtn = document.getElementById('move-up-btn');
+        const downBtn = document.getElementById('move-down-btn');
+        const interactBtn = document.getElementById('interact-btn');
+
+        let moveTouchId = -1;
+        let lookTouchId = -1;
+        let lookStart = { x: 0, y: 0 };
+        const moveStickRadius = moveZone.offsetWidth / 2;
+
+        moveZone.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            moveTouchId = e.changedTouches[0].identifier;
+        }, { passive: false });
+        
+        document.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            for(let i=0; i < e.changedTouches.length; i++){
+                const touch = e.changedTouches[i];
+                if (touch.identifier === moveTouchId) {
+                    const rect = moveZone.getBoundingClientRect();
+                    const x = touch.clientX - (rect.left + moveStickRadius);
+                    const y = touch.clientY - (rect.top + moveStickRadius);
+                    const dist = Math.min(Math.sqrt(x*x + y*y), moveStickRadius - 30);
+                    const angle = Math.atan2(y, x);
+
+                    moveStick.style.transform = `translate(${Math.cos(angle) * dist - 30}px, ${Math.sin(angle) * dist - 30}px)`;
+
+                    const deadzone = 0.1;
+                    const normalizedX = x / moveStickRadius;
+                    const normalizedY = y / moveStickRadius;
+
+                    moveForward = normalizedY < -deadzone;
+                    moveBackward = normalizedY > deadzone;
+                    moveLeft = normalizedX < -deadzone;
+                    moveRight = normalizedX > deadzone;
+                } else if(touch.identifier === lookTouchId) {
+                    const deltaX = touch.clientX - lookStart.x;
+                    const deltaY = touch.clientY - lookStart.y;
+                    cameraLookSpeed.x = deltaX * 0.002;
+                    cameraLookSpeed.y = deltaY * 0.002;
+                    lookStart.x = touch.clientX;
+                    lookStart.y = touch.clientY;
+                }
+            }
+        }, { passive: false });
+        
+        document.addEventListener('touchstart', (e) => {
+             for(let i=0; i < e.changedTouches.length; i++){
+                const touch = e.changedTouches[i];
+                if (touch.clientX > window.innerWidth / 2 && moveTouchId !== touch.identifier) {
+                    if (lookTouchId === -1) {
+                        lookTouchId = touch.identifier;
+                        lookStart.x = touch.clientX;
+                        lookStart.y = touch.clientY;
+                    }
+                }
+            }
+        });
+
+        document.addEventListener('touchend', (e) => {
+            for(let i=0; i < e.changedTouches.length; i++){
+                const touch = e.changedTouches[i];
+                if (touch.identifier === moveTouchId) {
+                    moveTouchId = -1;
+                    moveStick.style.transform = `translate(-50%, -50%)`;
+                    moveForward = moveBackward = moveLeft = moveRight = false;
+                } else if(touch.identifier === lookTouchId) {
+                    lookTouchId = -1;
+                }
+            }
+        });
+
+        upBtn.addEventListener('touchstart', () => moveUp = true);
+        upBtn.addEventListener('touchend', () => moveUp = false);
+        downBtn.addEventListener('touchstart', () => moveDown = true);
+        downBtn.addEventListener('touchend', () => moveDown = false);
+        interactBtn.addEventListener('click', () => {
+            if (intersectedObject) openModalForObject(intersectedObject);
+        });
+    }
+
+    // --- Environment ---
+    // --- Sun ---
+    const sunPosition = new THREE.Vector3(200, 75, -500);
+    const sunGeo = new THREE.SphereGeometry(50, 32, 16); // Optimization: Reduced segments
+    const sunMaterial = new THREE.ShaderMaterial({
+        uniforms: {
+            uTime: { value: 0 },
+            uColor1: { value: new THREE.Color(0xffe8ab) },
+            uColor2: { value: new THREE.Color(0xff8c00) },
+        },
+        vertexShader: `
+            varying vec2 vUv;
+            void main() {
+                vUv = uv;
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+            }
+        `,
+        fragmentShader: `
+            uniform float uTime;
+            uniform vec3 uColor1;
+            uniform vec3 uColor2;
+            varying vec2 vUv;
+
+            // 2D Noise function
+            float random (vec2 st) {
+                return fract(sin(dot(st.xy, vec2(12.9898,78.233))) * 43758.5453123);
+            }
+
+            // 2D Noise based on Morgan McGuire @morgan3d
+            float noise (vec2 st) {
+                vec2 i = floor(st);
+                vec2 f = fract(st);
+
+                float a = random(i);
+                float b = random(i + vec2(1.0, 0.0));
+                float c = random(i + vec2(0.0, 1.0));
+                float d = random(i + vec2(1.0, 1.0));
+
+                vec2 u = f*f*(3.0-2.0*f);
+                return mix(a, b, u.x) + (c - a)* u.y * (1.0 - u.x) + (d - b) * u.x * u.y;
+            }
+
+            void main() {
+                float dist = distance(vUv, vec2(0.5));
+                
+                // Turbulent surface
+                float t = uTime * 0.1;
+                float n = noise(vUv * 5.0 + t) * 0.5 + noise(vUv * 10.0 - t) * 0.25;
+                
+                // Create a glowing core
+                float core = 1.0 - smoothstep(0.0, 0.5, dist);
+                
+                // Mix colors based on noise and distance
+                vec3 color = mix(uColor1, uColor2, n);
+                
+                // Corona effect
+                float corona = smoothstep(0.45, 0.6, dist);
+                corona = 1.0 - corona;
+                
+                // Final color
+                vec3 finalColor = color * core + uColor1 * corona * 0.5;
+                
+                // Fade out at the edges
+                float alpha = 1.0 - smoothstep(0.48, 0.5, dist);
+
+                gl_FragColor = vec4(finalColor, alpha);
+            }
+        `,
+        transparent: true,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+    });
+    const sun = new THREE.Mesh(sunGeo, sunMaterial);
+    sun.position.copy(sunPosition);
+    scene.add(sun);
+    
+    // Add a point light for a subtle glow on other objects
+    const sunLight = new THREE.PointLight(0xffd185, 2, 2000, 1);
+    sunLight.position.copy(sunPosition);
+    scene.add(sunLight);
+
+
+    // --- Fractal Background ---
+    const fractalGeo = new THREE.SphereGeometry(1500, 32, 16); // Optimization: Reduced segments
+    const fractalMaterial = new THREE.ShaderMaterial({
+        uniforms: {
+            uTime: { value: 0 },
+            uResolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) },
+            uSunDirection: { value: new THREE.Vector3().copy(sunPosition).normalize() }
+        },
+        vertexShader: `
+            varying vec3 vWorldDirection;
+
+            void main() {
+                vec4 worldPosition = modelMatrix * vec4( position, 1.0 );
+                vWorldDirection = worldPosition.xyz - cameraPosition;
+                gl_Position = projectionMatrix * viewMatrix * worldPosition;
+            }
+        `,
+        fragmentShader: `
+            uniform float uTime;
+            uniform vec3 uSunDirection;
+            varying vec3 vWorldDirection;
+
+            const int MAX_STEPS = 32; // Optimization: Reduced raymarching steps
+            const float MAX_DIST = 100.0;
+            const float SURF_DIST = 0.001;
+
+            float mandelbulbSDF(vec3 pos, float time) {
+                vec3 z = pos;
+                float dr = 1.0;
+                float r = 0.0;
+                float power = 8.0 + sin(time * 0.1) * 2.0; 
+
+                for (int i = 0; i < 5; i++) {
+                    r = length(z);
+                    if (r > 2.0) break;
+
+                    float theta = acos(z.z / r);
+                    float phi = atan(z.y, z.x);
+                    dr = pow(r, power - 1.0) * power * dr + 1.0;
+
+                    float zr = pow(r, power);
+                    theta = theta * power;
+                    phi = phi * power;
+
+                    z = zr * vec3(sin(theta) * cos(phi), sin(phi) * sin(theta), cos(theta));
+                    z += pos;
+                }
+                return 0.5 * log(r) * r / dr;
+            }
+
+            float map(vec3 p) {
+                float d = mandelbulbSDF(p * 0.5, uTime);
+                return d * 0.8;
+            }
+
+            vec3 getNormal(vec3 p) {
+                float d = map(p);
+                vec2 e = vec2(0.001, 0);
+                vec3 n = d - vec3(
+                    map(p - e.xyy),
+                    map(p - e.yxy),
+                    map(p - e.yyx)
+                );
+                return normalize(n);
+            }
+            
+            float rayMarch(vec3 ro, vec3 rd) {
+                float dO = 0.0;
+                for(int i = 0; i < MAX_STEPS; i++) {
+                    vec3 p = ro + rd * dO;
+                    float dS = map(p);
+                    dO += dS;
+                    if(dO > MAX_DIST || abs(dS) < SURF_DIST) break;
+                }
+                return dO;
+            }
+
+            vec3 palette(float t) {
+                vec3 a = vec3(0.5, 0.5, 0.5);
+                vec3 b = vec3(0.5, 0.5, 0.5);
+                vec3 c = vec3(1.0, 1.0, 1.0);
+                vec3 d = vec3(0.2, 0.4, 0.8);
+                return a + b * cos(6.28318 * (c * t + d));
+            }
+
+            void main() {
+                vec3 ro = cameraPosition;
+                vec3 rd = normalize(vWorldDirection);
+
+                float dist = rayMarch(ro, rd);
+                
+                if (dist > MAX_DIST) {
+                    gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0); // Black background
+                    return;
+                }
+                
+                vec3 p = ro + rd * dist;
+                vec3 n = getNormal(p);
+                
+                float light = dot(n, uSunDirection);
+                
+                float color_t = length(p) * 0.1 + uTime * 0.05;
+                vec3 col = palette(color_t);
+                col = col * (0.5 + 0.5 * light);
+                col = mix(col, vec3(0.0), 1.0 - exp(-0.0005 * dist * dist)); // Fog
+
+                gl_FragColor = vec4(col, 1.0);
+            }
+        `,
+        side: THREE.BackSide,
+        depthWrite: false
+    });
+    const fractalBackground = new THREE.Mesh(fractalGeo, fractalMaterial);
+    scene.add(fractalBackground);
+
+    // --- Wormhole Tunnel ---
+    function createWormhole() {
+        // 1. Create a curve
+        const path = new THREE.CatmullRomCurve3([
+            new THREE.Vector3(100, 0, -100),
+            new THREE.Vector3(50, 20, -200),
+            new THREE.Vector3(0, 0, -300),
+            new THREE.Vector3(-50, -20, -400),
+            new THREE.Vector3(-100, 0, -500),
+            new THREE.Vector3(-50, 20, -600),
+            new THREE.Vector3(0, 0, -700),
+            new THREE.Vector3(50, -20, -800),
+            new THREE.Vector3(100, 0, -900),
+        ]);
+
+        // 2. Create geometry
+        const tubeGeo = new THREE.TubeGeometry(path, 80, 20, 12, false); // Optimization: Reduced segments
+
+        // 3. Create shader material
+        const wormholeMaterial = new THREE.ShaderMaterial({
+            uniforms: {
+                uTime: { value: 0 },
+                uColor1: { value: new THREE.Color(0x3b82f6) },
+                uColor2: { value: new THREE.Color(0x8b5cf6) },
+            },
+            vertexShader: `
+                uniform float uTime;
+                varying vec2 vUv;
+
+                // Perlin 3D noise
+                vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+                vec4 mod289(vec4 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+                vec4 permute(vec4 x) { return mod289(((x*34.0)+1.0)*x); }
+                vec4 taylorInvSqrt(vec4 r) { return 1.79284291400159 - 0.85373472095314 * r; }
+
+                float snoise(vec3 v) {
+                    const vec2  C = vec2(1.0/6.0, 1.0/3.0) ;
+                    const vec4  D = vec4(0.0, 0.5, 1.0, 2.0);
+                    vec3 i  = floor(v + dot(v, C.yyy) );
+                    vec3 x0 =   v - i + dot(i, C.xxx) ;
+                    vec3 g = step(x0.yzx, x0.xyz);
+                    vec3 l = 1.0 - g;
+                    vec3 i1 = min( g.xyz, l.zxy );
+                    vec3 i2 = max( g.xyz, l.zxy );
+                    vec3 x1 = x0 - i1 + C.xxx;
+                    vec3 x2 = x0 - i2 + C.yyy;
+                    vec3 x3 = x0 - D.yyy;
+                    i = mod289(i);
+                    vec4 p = permute( permute( permute(
+                                i.z + vec4(0.0, i1.z, i2.z, 1.0 ))
+                            + i.y + vec4(0.0, i1.y, i2.y, 1.0 ))
+                            + i.x + vec4(0.0, i1.x, i2.x, 1.0 ));
+                    float n_ = 0.142857142857;
+                    vec3  ns = n_ * D.wyz - D.xzx;
+                    vec4 j = p - 49.0 * floor(p * ns.z * ns.z);
+                    vec4 x_ = floor(j * ns.z);
+                    vec4 y_ = floor(j - 7.0 * x_ );
+                    vec4 x = x_ *ns.x + ns.yyyy;
+                    vec4 y = y_ *ns.x + ns.yyyy;
+                    vec4 h = 1.0 - abs(x) - abs(y);
+                    vec4 b0 = vec4( x.xy, y.xy );
+                    vec4 b1 = vec4( x.zw, y.zw );
+                    vec4 s0 = floor(b0)*2.0 + 1.0;
+                    vec4 s1 = floor(b1)*2.0 + 1.0;
+                    vec4 sh = -step(h, vec4(0.0));
+                    vec4 a0 = b0.xzyw + s0.xzyw*sh.xxyy ;
+                    vec4 a1 = b1.xzyw + s1.xzyw*sh.zzww ;
+                    vec3 p0 = vec3(a0.xy,h.x);
+                    vec3 p1 = vec3(a0.zw,h.y);
+                    vec3 p2 = vec3(a1.xy,h.z);
+                    vec3 p3 = vec3(a1.zw,h.w);
+                    vec4 norm = taylorInvSqrt(vec4(dot(p0,p0), dot(p1,p1), dot(p2,p2), dot(p3,p3)));
+                    p0 *= norm.x;
+                    p1 *= norm.y;
+                    p2 *= norm.z;
+                    p3 *= norm.w;
+                    vec4 m = max(0.6 - vec4(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3)), 0.0);
+                    m = m * m;
+                    return 42.0 * dot( m*m, vec4( dot(p0,x0), dot(p1,x1), dot(p2,x2), dot(p3,x3) ) );
+                }
+
+                void main() {
+                    vUv = uv;
+                    vec3 pos = position;
+                    float noise = snoise(pos * 0.1 + uTime * 0.2) * 2.0;
+                    pos += normal * noise;
+                    gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+                }
+            `,
+            fragmentShader: `
+                uniform float uTime;
+                uniform vec3 uColor1;
+                uniform vec3 uColor2;
+                varying vec2 vUv;
+
+                float random (vec2 st) {
+                    return fract(sin(dot(st.xy, vec2(12.9898,78.233))) * 43758.5453123);
+                }
+
+                float noise(vec2 st) {
+                    vec2 i = floor(st);
+                    vec2 f = fract(st);
+                    float a = random(i);
+                    float b = random(i + vec2(1.0, 0.0));
+                    float c = random(i + vec2(0.0, 1.0));
+                    float d = random(i + vec2(1.0, 1.0));
+                    vec2 u = f * f * (3.0 - 2.0 * f);
+                    return mix(a, b, u.x) + (c - a) * u.y * (1.0 - u.x) + (d - b) * u.x * u.y;
+                }
+
+                void main() {
+                    vec2 uv = vUv;
+                    uv.x -= uTime * 0.1;
+
+                    float n = noise(uv * vec2(10.0, 2.0)) * 0.5 + noise(uv * vec2(20.0, 4.0)) * 0.25;
+                    n = pow(n, 2.0);
+
+                    vec3 color = mix(uColor1, uColor2, n);
+                    
+                    float streaks = sin((uv.y - uTime * 0.05) * 50.0) * 0.5 + 0.5;
+                    streaks = smoothstep(0.8, 1.0, streaks);
+                    color += vec3(1.0, 1.0, 1.0) * streaks * 0.5;
+
+                    float edgeFade = smoothstep(0.0, 0.1, vUv.y) * smoothstep(1.0, 0.9, vUv.y);
+                    
+                    float alpha = n * 1.5 + streaks;
+
+                    gl_FragColor = vec4(color, alpha * edgeFade);
+                }
+            `,
+            transparent: true,
+            blending: THREE.AdditiveBlending,
+            side: THREE.BackSide,
+            depthWrite: false,
+        });
+        
+        const wormhole = new THREE.Mesh(tubeGeo, wormholeMaterial);
+        scene.add(wormhole);
+        return wormhole;
+    }
+    const wormhole = createWormhole();
+
+    // --- Fractal Planet ---
+    function createFractalPlanet() {
+        const planetGeo = new THREE.SphereGeometry(800, 32, 16); // Optimization: Reduced segments
+        const planetMaterial = new THREE.ShaderMaterial({
+            uniforms: {
+                uTime: { value: 0 },
+                uSunDirection: { value: new THREE.Vector3().copy(sunPosition).normalize() }
+            },
+            vertexShader: `
+                varying vec3 vWorldDirection;
+                void main() {
+                    vec4 worldPosition = modelMatrix * vec4( position, 1.0 );
+                    vWorldDirection = worldPosition.xyz - cameraPosition;
+                    gl_Position = projectionMatrix * viewMatrix * worldPosition;
+                }
+            `,
+            fragmentShader: `
+                uniform float uTime;
+                uniform vec3 uSunDirection;
+                varying vec3 vWorldDirection;
+
+                const int MAX_STEPS = 48; // Optimization: Reduced raymarching steps
+                const float MAX_DIST = 1000.0;
+                const float SURF_DIST = 0.01;
+
+                // --- Noise Function (Simplex) ---
+                vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+                vec4 mod289(vec4 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+                vec4 permute(vec4 x) { return mod289(((x*34.0)+1.0)*x); }
+                vec4 taylorInvSqrt(vec4 r) { return 1.79284291400159 - 0.85373472095314 * r; }
+
+                float snoise(vec3 v) {
+                    const vec2 C = vec2(1.0/6.0, 1.0/3.0);
+                    const vec4 D = vec4(0.0, 0.5, 1.0, 2.0);
+                    vec3 i = floor(v + dot(v, C.yyy));
+                    vec3 x0 = v - i + dot(i, C.xxx);
+                    vec3 g = step(x0.yzx, x0.xyz);
+                    vec3 l = 1.0 - g;
+                    vec3 i1 = min(g.xyz, l.zxy);
+                    vec3 i2 = max(g.xyz, l.zxy);
+                    vec3 x1 = x0 - i1 + C.xxx;
+                    vec3 x2 = x0 - i2 + C.yyy;
+                    vec3 x3 = x0 - D.yyy;
+                    i = mod289(i);
+                    vec4 p = permute( permute( permute( i.z + vec4(0.0, i1.z, i2.z, 1.0 )) + i.y + vec4(0.0, i1.y, i2.y, 1.0 )) + i.x + vec4(0.0, i1.x, i2.x, 1.0 ));
+                    float n_ = 0.142857142857;
+                    vec3 ns = n_ * D.wyz - D.xzx;
+                    vec4 j = p - 49.0 * floor(p * ns.z * ns.z);
+                    vec4 x_ = floor(j * ns.z);
+                    vec4 y_ = floor(j - 7.0 * x_);
+                    vec4 x = x_ *ns.x + ns.yyyy;
+                    vec4 y = y_ *ns.x + ns.yyyy;
+                    vec4 h = 1.0 - abs(x) - abs(y);
+                    vec4 b0 = vec4(x.xy, y.xy);
+                    vec4 b1 = vec4(x.zw, y.zw);
+                    vec4 s0 = floor(b0)*2.0 + 1.0;
+                    vec4 s1 = floor(b1)*2.0 + 1.0;
+                    vec4 sh = -step(h, vec4(0.0));
+                    vec4 a0 = b0.xzyw + s0.xzyw*sh.xxyy;
+                    vec4 a1 = b1.xzyw + s1.xzyw*sh.zzww;
+                    vec3 p0 = vec3(a0.xy,h.x);
+                    vec3 p1 = vec3(a0.zw,h.y);
+                    vec3 p2 = vec3(a1.xy,h.z);
+                    vec3 p3 = vec3(a1.zw,h.w);
+                    vec4 norm = taylorInvSqrt(vec4(dot(p0,p0), dot(p1,p1), dot(p2,p2), dot(p3,p3)));
+                    p0 *= norm.x; p1 *= norm.y; p2 *= norm.z; p3 *= norm.w;
+                    vec4 m = max(0.6 - vec4(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3)), 0.0);
+                    m = m * m;
+                    return 42.0 * dot( m*m, vec4( dot(p0,x0), dot(p1,x1), dot(p2,x2), dot(p3,x3) ) );
+                }
+                
+                // --- Fractal Brownian Motion for Terrain ---
+                float fbm(vec3 p) {
+                    float v = 0.0;
+                    float a = 0.5;
+                    vec3 shift = vec3(100.0);
+                    for (int i = 0; i < 5; ++i) { // Optimization: Reduced octaves
+                        v += a * snoise(p);
+                        p = p * 2.0 + shift;
+                        a *= 0.5;
+                    }
+                    return v;
+                }
+
+                // --- SDFs (Signed Distance Functions) ---
+                float sdCylinder(vec3 p, float h, float r) {
+                    vec2 d = abs(vec2(length(p.xz), p.y)) - vec2(r, h);
+                    return min(max(d.x, d.y), 0.0) + length(max(d, 0.0));
+                }
+                
+                float sdFractalTree(vec3 p) {
+                    float d = 1e10;
+                    p.y -= 30.0; // Raise tree a bit
+                    vec3 p_orig = p;
+                    float scale = 1.0;
+                    mat2 rot = mat2(cos(0.8), -sin(0.8), sin(0.8), cos(0.8));
+
+                    for (int i = 0; i < 5; i++) { // Optimization: Reduced iterations
+                        p.y -= 2.0 * scale;
+                        p.xz = abs(p.xz);
+                        p.xz -= 1.0 * scale;
+                        p.xz *= rot;
+                        d = min(d, sdCylinder(p, 5.0 * scale, 0.2 * scale));
+                        scale *= 0.8;
+                    }
+                    return d;
+                }
+
+                vec2 opRep(vec3 p, vec3 c) {
+                    vec3 q = mod(p + 0.5 * c, c) - 0.5 * c;
+                    return vec2(sdFractalTree(q), 2.0);
+                }
+
+                // --- Main Scene Map ---
+                vec2 map(vec3 p) {
+                    // Ground / Mountains
+                    float ground = p.y + fbm(p * 0.01) * 30.0;
+                    vec2 res = vec2(ground, 1.0);
+
+                    // Trees
+                    vec2 tree = opRep(p, vec3(40.0, 0.0, 40.0));
+                    tree.x += 0.01; // Make sure tree SDF is slightly positive at base
+                    
+                    if (tree.x < res.x) {
+                       res = tree;
+                    }
+
+                    return res;
+                }
+                
+                vec3 getNormal(vec3 p) {
+                    vec2 e = vec2(0.01, 0);
+                    vec3 n = map(p).x - vec3(
+                        map(p - e.xyy).x,
+                        map(p - e.yxy).x,
+                        map(p - e.yyx).x
+                    );
+                    return normalize(n);
+                }
+
+                float rayMarch(vec3 ro, vec3 rd) {
+                    float dO = 0.0;
+                    for(int i = 0; i < MAX_STEPS; i++) {
+                        vec3 p = ro + rd * dO;
+                        float dS = map(p).x;
+                        dO += dS;
+                        if(dO > MAX_DIST || abs(dS) < SURF_DIST) break;
+                    }
+                    return dO;
+                }
+
+                // --- Main Render Function ---
+                void main() {
+                    vec3 ro = cameraPosition;
+                    vec3 rd = normalize(vWorldDirection);
+                    
+                    float dist = rayMarch(ro, rd);
+                    
+                    if (dist > MAX_DIST) {
+                        discard;
+                    }
+                    
+                    vec3 p = ro + rd * dist;
+                    vec3 n = getNormal(p);
+                    vec2 res = map(p);
+                    float materialID = res.y;
+
+                    // --- Lighting ---
+                    float sun_d = max(dot(n, uSunDirection), 0.0);
+                    float ambient = 0.2;
+                    float light = ambient + sun_d * 0.8;
+                    
+                    // --- Coloring ---
+                    vec3 col;
+                    if (materialID == 1.0) { // Ground
+                        float height_factor = smoothstep(-20.0, 30.0, p.y);
+                        vec3 rockColor = vec3(0.3);
+                        vec3 snowColor = vec3(0.9);
+                        col = mix(rockColor, snowColor, height_factor);
+                    } else { // Trees
+                        col = vec3(0.7, 0.8, 0.95) * 1.2;
+                    }
+                    
+                    col *= light;
+                    
+                    // --- Fog ---
+                    float fog_factor = 1.0 - exp(-0.002 * dist * dist);
+                    col = mix(col, vec3(0.01, 0.02, 0.03), fog_factor);
+
+                    gl_FragColor = vec4(col, 1.0);
+                }
+            `,
+            side: THREE.BackSide,
+        });
+        const planet = new THREE.Mesh(planetGeo, planetMaterial);
+        planet.position.set(0, 0, -1100);
+        scene.add(planet);
+        return planet;
+    }
+
+    const fractalPlanet = createFractalPlanet();
+
+
+    // --- Companion Sphere ---
+    const companionGeo = new THREE.SphereGeometry(1, 24, 12); // Optimization: Reduced segments
+    const companionMaterial = new THREE.ShaderMaterial({
+        uniforms: {
+            uTime: { value: 0 },
+            uSpeed: { value: 0 },
+            uColor: { value: new THREE.Color(0x8b5cf6) }
+        },
+        vertexShader: `
+            varying vec3 vNormal;
+            varying vec3 vPosition;
+            varying vec3 vWorldPosition;
+
+            void main() {
+                vNormal = normalize(normalMatrix * normal);
+                vPosition = vec3(modelViewMatrix * vec4(position, 1.0));
+                vWorldPosition = (modelMatrix * vec4(position, 1.0)).xyz;
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+            }
+        `,
+        fragmentShader: `
+            uniform float uTime;
+            uniform float uSpeed;
+            uniform vec3 uColor;
+
+            varying vec3 vNormal;
+            varying vec3 vPosition;
+            varying vec3 vWorldPosition;
+
+            float simpleNoise(vec3 p, float speed) {
+                float time = uTime * (1.0 + speed * 2.0);
+                return sin(p.x * 10.0 + time) *
+                       sin(p.y * 10.0 + time) *
+                       sin(p.z * 10.0 + time);
+            }
+
+            void main() {
+                // Fresnel for edge glow
+                vec3 viewDirection = normalize(-vPosition);
+                float fresnel = 1.0 - dot(viewDirection, vNormal);
+                fresnel = pow(fresnel, 4.0) * (1.5 + uSpeed * 5.0); // Glow more with speed
+
+                // Core pulse
+                float core = 1.0 - length(vPosition);
+                core = smoothstep(0.6, 1.0, core);
+                core *= (0.5 + sin(uTime * 5.0) * 0.5);
+
+                // Surface energy pattern
+                float noise = simpleNoise(vWorldPosition * 0.5, uSpeed);
+                noise = smoothstep(0.2, 0.8, noise);
+
+                // Combine
+                vec3 finalColor = uColor * (noise * 0.5 + fresnel + core * 0.5);
+                float alpha = clamp(fresnel + noise * 0.1 + core * 0.2, 0.0, 1.0);
+
+                gl_FragColor = vec4(finalColor, alpha);
+            }
+        `,
+        transparent: true,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false
+    });
+    const companionSphere = new THREE.Mesh(companionGeo, companionMaterial);
+    scene.add(companionSphere);
+
+    const companionTarget = new THREE.Object3D();
+    camera.add(companionTarget);
+    companionTarget.position.set(2.5, 1, -5);
+
+
+    // --- Interactive Portals ---
+    const interactiveObjects = [];
+    function createPortal(text, position, color, dataKey) {
+        const group = new THREE.Group();
+        group.userData.color = new THREE.Color(color);
+
+        // --- Custom Shader Material for Portals ---
+        const vertexShader = `
+            varying vec3 vNormal;
+            varying vec3 vPosition; // Position in view space
+
+            void main() {
+                vNormal = normalize(normalMatrix * normal);
+                vPosition = vec3(modelViewMatrix * vec4(position, 1.0));
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+            }
+        `;
+
+        const fragmentShader = `
+            uniform vec3 uColor;
+            uniform float uTime;
+
+            varying vec3 vNormal;
+            varying vec3 vPosition;
+
+            void main() {
+                // Fresnel effect for edge glow
+                vec3 viewDirection = normalize(-vPosition);
+                float fresnel = 1.0 - dot(viewDirection, vNormal);
+                fresnel = pow(fresnel, 3.0); // Power of 3.0 for a tight glow
+
+                // Simple animated bands for energy effect
+                float bands = sin(vPosition.y * 15.0 - uTime * 3.0) * 0.5 + 0.5;
+                float energy = smoothstep(0.45, 0.55, bands);
+
+                // Combine effects
+                float intensity = fresnel * 1.5 + energy * 0.3;
+                float alpha = pow(fresnel, 2.0) + energy * 0.2;
+
+                gl_FragColor = vec4(uColor * intensity, alpha);
+            }
+        `;
+        
+        const portalMaterial = new THREE.ShaderMaterial({
+            uniforms: {
+                uTime: { value: 0 },
+                uColor: { value: new THREE.Color(color) },
+            },
+            vertexShader,
+            fragmentShader,
+            transparent: true,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false
+        });
+
+        group.userData.material = portalMaterial; // Store material to update uniforms
+
+        const mainRingGeo = new THREE.TorusGeometry(5, 0.2, 16, 48); // Optimization: Reduced segments
+        const mainRing = new THREE.Mesh(mainRingGeo, portalMaterial);
+
+        const innerRingGeo = new THREE.TorusGeometry(4.2, 0.1, 16, 48); // Optimization: Reduced segments
+        const innerRing = new THREE.Mesh(innerRingGeo, portalMaterial); // Share the same material
+        innerRing.rotation.x = Math.PI / 2;
+        
+        const coreGeo = new THREE.SphereGeometry(0.5, 16, 8); // Optimization: Reduced segments
+        const coreMat = new THREE.MeshBasicMaterial({ color: color, transparent: true, opacity: 0.8 });
+        const core = new THREE.Mesh(coreGeo, coreMat);
+        
+        mainRing.userData = { isInteractive: true, dataKey };
+        
+        const labelDiv = document.createElement('div');
+        labelDiv.className = 'css2d-label';
+        labelDiv.textContent = text;
+        const label = new CSS2DObject(labelDiv);
+        label.position.set(0, 6.5, 0);
+
+        group.add(mainRing, innerRing, core, label);
+        group.position.copy(position);
+        scene.add(group);
+        interactiveObjects.push(mainRing);
+        return group;
+    }
+
+    const portals = [
+        createPortal('Трюки', new THREE.Vector3(0, 0, -40), 0x3b82f6, 'tricks'),
+        createPortal('Инструкторы', new THREE.Vector3(-40, 10, 0), 0x8b5cf6, 'instructors'),
+        createPortal('Расписание', new THREE.Vector3(40, -10, 0), 0x10b981, 'schedule'),
+        createPortal('Контакты', new THREE.Vector3(0, -5, 50), 0xf59e0b, 'contact'),
+    ];
+
+    // --- Raycasting for Interaction ---
+    const raycaster = new THREE.Raycaster();
+    const crosshair = document.querySelector('.crosshair');
+    const interactionPrompt = document.querySelector('.interaction-prompt');
+    const interactionText = document.getElementById('interaction-text');
+    const interactBtnMobile = document.getElementById('interact-btn');
+    let intersectedObject = null;
+
+    // --- Animation Loop ---
+    const clock = new THREE.Clock();
+    function animate() {
+      requestAnimationFrame(animate);
+      const delta = clock.getDelta();
+      const time = clock.getElapsedTime();
+
+      // Update Sun
+      sunMaterial.uniforms.uTime.value = time;
+
+      // Update Fractal Background
+      fractalMaterial.uniforms.uTime.value = time;
+
+      // Update Fractal Planet
+      fractalPlanet.material.uniforms.uTime.value = time;
+
+      // Update Wormhole
+      wormhole.material.uniforms.uTime.value = time;
+
+      // Update Portals
+      portals.forEach((p, i) => {
+        p.children[0].rotation.y += 0.003; // mainRing
+        p.children[1].rotation.y -= 0.008; // innerRing
+        p.children[1].rotation.x += 0.003;
+        
+        // Update shader uniforms on the shared material
+        p.userData.material.uniforms.uTime.value = time;
+        
+        const pulse = 1 + Math.sin(time * 2 + i) * 0.05;
+        p.scale.set(pulse, pulse, pulse);
+        
+        const intensity = 0.8 + Math.sin(time * 3 + i) * 0.2;
+        const color = p.userData.color.clone().multiplyScalar(intensity);
+        
+        // Update shader color uniform
+        p.userData.material.uniforms.uColor.value.copy(color);
+
+        // Update core color
+        p.children[2].material.color.copy(color);
+      });
+
+      // Update controls and movement
+      const speed = 80.0;
+      velocity.x -= velocity.x * 10.0 * delta;
+      velocity.y -= velocity.y * 10.0 * delta;
+      velocity.z -= velocity.z * 10.0 * delta;
+      
+      direction.z = Number(moveForward) - Number(moveBackward);
+      direction.x = Number(moveRight) - Number(moveLeft);
+      direction.normalize();
+
+      if (moveForward || moveBackward) velocity.z -= direction.z * speed * delta;
+      if (moveLeft || moveRight) velocity.x -= direction.x * speed * delta;
+      if (moveUp) velocity.y += speed * delta;
+      if (moveDown) velocity.y -= speed * delta;
+      
+      if (isMobile) {
+          camera.rotation.y -= cameraLookSpeed.x;
+          camera.rotation.x -= cameraLookSpeed.y;
+          camera.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, camera.rotation.x));
+          cameraLookSpeed.x = 0;
+          cameraLookSpeed.y = 0;
+
+          const euler = new THREE.Euler(0, camera.rotation.y, 0, 'YXZ');
+          const forward = new THREE.Vector3(0, 0, -1).applyEuler(euler);
+          const right = new THREE.Vector3(1, 0, 0).applyEuler(euler);
+
+          camera.position.addScaledVector(forward, -velocity.z * delta);
+          camera.position.addScaledVector(right, -velocity.x * delta);
+          camera.position.y += velocity.y * delta;
+
+      } else if (controls.isLocked) {
+          controls.moveRight(-velocity.x * delta);
+          controls.moveForward(-velocity.z * delta);
+          controls.getObject().position.y += velocity.y * delta;
+      }
+
+      // Update Companion Sphere
+      const targetPosition = new THREE.Vector3();
+      companionTarget.getWorldPosition(targetPosition);
+
+      companionSphere.position.lerp(targetPosition, 0.03); // Smooth follow
+
+      // Add bobbing motion
+      companionSphere.position.y += Math.sin(time * 2.5) * 0.02;
+      companionSphere.position.x += Math.cos(time * 2.0) * 0.02;
+
+      // Look at the player
+      companionSphere.lookAt(camera.position);
+
+      // Update shader
+      companionSphere.material.uniforms.uTime.value = time;
+      const currentSpeed = velocity.length();
+      companionSphere.material.uniforms.uSpeed.value = Math.min(currentSpeed / speed, 1.0);
+
+
+      // Interaction Raycast
+      raycaster.setFromCamera({ x: 0, y: 0 }, camera);
+      const intersects = raycaster.intersectObjects(interactiveObjects);
+      
+      if (intersects.length > 0 && intersects[0].distance < 15) {
+          if (intersectedObject !== intersects[0].object) {
+              intersectedObject = intersects[0].object;
+          }
+          if(isMobile){
+            interactBtnMobile.classList.remove('hidden');
+          } else {
+            crosshair.classList.add('interactive');
+            interactionPrompt.classList.add('visible');
+            interactionText.textContent = `Взаимодействовать с "${intersects[0].object.parent.children[3].element.textContent}"`;
+          }
+      } else {
+          intersectedObject = null;
+          if(isMobile){
+            interactBtnMobile.classList.add('hidden');
+          } else {
+            crosshair.classList.remove('interactive');
+            interactionPrompt.classList.remove('visible');
+          }
+      }
+
+      composer.render();
+      labelRenderer.render(scene, camera);
+    }
+
+    // --- Window Resize ---
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      composer.setSize(window.innerWidth, window.innerHeight);
+      labelRenderer.setSize(window.innerWidth, window.innerHeight);
+      fractalMaterial.uniforms.uResolution.value.set(window.innerWidth, window.innerHeight);
+    });
+
+    // --- Modal Logic & Data ---
+    const modalContainer = document.getElementById('modal-container');
+    const modalContent = document.getElementById('modal-content');
+
+    const appData = {
+      tricks: [
+        { name: '540 Kick', difficulty: 'Новичок', description: 'Вращение на 540° с ударом ногой в воздухе. Основа для многих продвинутых трюков.' },
+        { name: 'Butterfly Kick (B-Kick)', difficulty: 'Новичок', description: 'Горизонтальное вращение с махом ногами, похожее на крылья бабочки.' },
+        { name: 'Gainer', difficulty: 'Средний', description: 'Сальто назад с движением вперёд. Часто выполняется с возвышения.' },
+        { name: 'Corkscrew (Cork)', difficulty: 'Средний', description: 'Горизонтальный винт в воздухе, сочетающий сальто и вращение. Выглядит очень эффектно.' },
+        { name: 'Double Cork', difficulty: 'Продвинутый', description: 'Corkscrew с двумя полными винтами в воздухе. Требует высоты и контроля.' },
+        { name: 'Cartwheel Full Twist', difficulty: 'Продвинутый', description: 'Колесо, переходящее в сальто назад с винтом. Динамичный и красивый элемент.' }
+      ],
+      instructors: [
+        { name: 'Дмитрий "Вихрь" Петров', specialty: 'Силовые элементы и сальто', bio: 'Мастер акробатики, который научит вас летать. Дмитрий верит, что нет ничего невозможного.' },
+        { name: 'Елена "Стрела" Волкова', specialty: 'Гибкость и кикинг', bio: 'Ее удары ногами - это искусство. Елена поможет вам развить грацию, скорость и невероятную гибкость.' },
+        { name: 'Иван "Метеор" Соколов', specialty: 'Комбо и переходы', bio: 'Гуру плавных связок и креативных переходов. Иван научит вас создавать свой уникальный стиль.' },
+      ],
+      schedule: [
+        { day: 'Понедельник', time: '18:00 - 19:30', className: 'Основы Трикинга', level: 'Новичок' },
+        { day: 'Вторник', time: '19:00 - 20:30', className: 'Продвинутые Кики', level: 'Средний' },
+        { day: 'Среда', time: '18:00 - 19:30', className: 'Акробатика', level: 'Все уровни' },
+        { day: 'Четверг', time: '20:00 - 21:30', className: 'Комбо-сессия', level: 'Продвинутый' },
+        { day: 'Пятница', time: '19:00 - 20:30', className: 'Открытый Зал', level: 'Все уровни' },
+        { day: 'Суббота', time: '12:00 - 14:00', className: 'Интенсив по Сальто', level: 'Средний/Продвинутый' },
+      ]
+    };
+
+    function getDifficultyClass(level) {
+        return `difficulty-${level.replace(' ', '_').replace('/', '\\/')}`;
+    }
+
+    function openModalForObject(object) {
+        if (!isMobile) {
+          controls.unlock();
+        }
+        const dataKey = object.userData.dataKey;
+        let contentHTML = `
+            <button id="modal-close" class="modal-close-btn" aria-label="Закрыть">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        `;
+
+        switch(dataKey) {
+            case 'tricks':
+                contentHTML += `<h2 class="section-title">Библиотека Трюков</h2>`;
+                contentHTML += appData.tricks.map(trick => `
+                    <div class="card">
+                        <div class="flex justify-between items-start">
+                           <h3 class="text-xl font-bold mb-2 text-gray-100">${trick.name}</h3>
+                           <span class="get-difficulty-class ${getDifficultyClass(trick.difficulty)}">${trick.difficulty}</span>
+                        </div>
+                        <p class="text-gray-400">${trick.description}</p>
+                    </div>
+                `).join('');
+                break;
+            case 'instructors':
+                contentHTML += `<h2 class="section-title">Наши Инструкторы</h2>`;
+                contentHTML += appData.instructors.map(ins => `
+                    <div class="card text-center">
+                        <h3 class="text-xl font-bold text-gray-100">${ins.name}</h3>
+                        <p class="text-purple-400 mt-1 font-semibold">${ins.specialty}</p>
+                        <p class="text-gray-400 mt-2">${ins.bio}</p>
+                    </div>
+                `).join('');
+                break;
+            case 'schedule':
+                contentHTML += `<h2 class="section-title">Расписание</h2>`;
+                contentHTML += `<div class="overflow-x-auto"><table class="w-full text-left"><thead><tr class="border-b border-gray-700">
+                    <th class="p-3">День</th><th class="p-3">Время</th><th class="p-3">Занятие</th><th class="p-3">Уровень</th>
+                    </tr></thead><tbody>`;
+                contentHTML += appData.schedule.map(item => `
+                    <tr class="border-b border-gray-800 hover:bg-gray-800/50">
+                        <td class="p-3 font-semibold text-gray-200">${item.day}</td>
+                        <td class="p-3 text-gray-300">${item.time}</td>
+                        <td class="p-3 text-gray-300">${item.className}</td>
+                        <td class="p-3"><span class="get-difficulty-class ${getDifficultyClass(item.level)}">${item.level}</span></td>
+                    </tr>
+                `).join('');
+                contentHTML += `</tbody></table></div>`;
+                break;
+            case 'contact':
+                contentHTML += `<h2 class="section-title">Контакты</h2>`;
+                contentHTML += `<div class="card text-center text-lg">
+                    <p class="text-xl text-gray-200 mb-4">Готов начать? Первое занятие бесплатно!</p>
+                    <p class="text-gray-300"><strong>Адрес:</strong> г. Москва, ул. Спортивная, 1</p>
+                    <p class="text-gray-300 mt-1"><strong>Телефон:</strong> +7 (495) 123-45-67</p>
+                </div>`;
+                break;
+        }
+
+        modalContent.innerHTML = contentHTML;
+        modalContent.scrollTop = 0; // Reset scroll position
+        modalContainer.classList.add('visible');
+
+        document.getElementById('modal-close').addEventListener('click', closeModal);
+        modalContainer.addEventListener('click', (e) => {
+            if (e.target === modalContainer) closeModal();
+        });
+    }
+    
+    function closeModal() {
+        modalContainer.classList.remove('visible');
+    }
+
+    // Start the animation loop
+    animate();
   </script>
 </body>
 </html>
