@@ -353,6 +353,7 @@
     import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
     import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
     import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+    import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
@@ -363,7 +364,7 @@
     camera.position.z = 10;
     const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('webgl-canvas'), antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5)); // Optimization: Cap pixel ratio
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
     renderer.toneMapping = THREE.ReinhardToneMapping;
 
     // --- CSS2D Renderer for labels ---
@@ -377,9 +378,9 @@
     // --- Post-processing (Bloom) ---
     const renderScene = new RenderPass(scene, camera);
     const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
-    bloomPass.threshold = 0.1; // Optimization: Increased threshold
-    bloomPass.strength = 0.7; // Optimization: Reduced bloom strength
-    bloomPass.radius = 0.35; // Optimization: Reduced bloom radius
+    bloomPass.threshold = 0;
+    bloomPass.strength = 0.9;
+    bloomPass.radius = 0.4;
     const composer = new EffectComposer(renderer);
     composer.addPass(renderScene);
     composer.addPass(bloomPass);
@@ -530,9 +531,19 @@
     }
 
     // --- Environment ---
+    const sunPosition = new THREE.Vector3(200, 200, -500);
+
+    // --- Lighting ---
+    const sunLight = new THREE.DirectionalLight(0xffd185, 2);
+    sunLight.position.copy(sunPosition);
+    sunLight.target.position.set(0,0,0);
+    scene.add(sunLight);
+    scene.add(sunLight.target);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.1);
+    scene.add(ambientLight);
+
     // --- Sun ---
-    const sunPosition = new THREE.Vector3(200, 75, -500);
-    const sunGeo = new THREE.SphereGeometry(50, 32, 16); // Optimization: Reduced segments
+    const sunGeo = new THREE.SphereGeometry(50, 64, 32);
     const sunMaterial = new THREE.ShaderMaterial({
         uniforms: {
             uTime: { value: 0 },
@@ -551,49 +562,23 @@
             uniform vec3 uColor1;
             uniform vec3 uColor2;
             varying vec2 vUv;
-
-            // 2D Noise function
-            float random (vec2 st) {
-                return fract(sin(dot(st.xy, vec2(12.9898,78.233))) * 43758.5453123);
-            }
-
-            // 2D Noise based on Morgan McGuire @morgan3d
+            float random (vec2 st) { return fract(sin(dot(st.xy, vec2(12.9898,78.233))) * 43758.5453123); }
             float noise (vec2 st) {
-                vec2 i = floor(st);
-                vec2 f = fract(st);
-
-                float a = random(i);
-                float b = random(i + vec2(1.0, 0.0));
-                float c = random(i + vec2(0.0, 1.0));
-                float d = random(i + vec2(1.0, 1.0));
-
+                vec2 i = floor(st); vec2 f = fract(st);
+                float a = random(i); float b = random(i + vec2(1.0, 0.0));
+                float c = random(i + vec2(0.0, 1.0)); float d = random(i + vec2(1.0, 1.0));
                 vec2 u = f*f*(3.0-2.0*f);
                 return mix(a, b, u.x) + (c - a)* u.y * (1.0 - u.x) + (d - b) * u.x * u.y;
             }
-
             void main() {
                 float dist = distance(vUv, vec2(0.5));
-                
-                // Turbulent surface
                 float t = uTime * 0.1;
                 float n = noise(vUv * 5.0 + t) * 0.5 + noise(vUv * 10.0 - t) * 0.25;
-                
-                // Create a glowing core
                 float core = 1.0 - smoothstep(0.0, 0.5, dist);
-                
-                // Mix colors based on noise and distance
                 vec3 color = mix(uColor1, uColor2, n);
-                
-                // Corona effect
-                float corona = smoothstep(0.45, 0.6, dist);
-                corona = 1.0 - corona;
-                
-                // Final color
+                float corona = 1.0 - smoothstep(0.45, 0.6, dist);
                 vec3 finalColor = color * core + uColor1 * corona * 0.5;
-                
-                // Fade out at the edges
                 float alpha = 1.0 - smoothstep(0.48, 0.5, dist);
-
                 gl_FragColor = vec4(finalColor, alpha);
             }
         `,
@@ -605,474 +590,360 @@
     sun.position.copy(sunPosition);
     scene.add(sun);
     
-    // Add a point light for a subtle glow on other objects
-    const sunLight = new THREE.PointLight(0xffd185, 2, 2000, 1);
-    sunLight.position.copy(sunPosition);
-    scene.add(sunLight);
 
+    // --- Skyboxes & Dynamic Sky ---
+    const cubeTextureLoader = new THREE.CubeTextureLoader();
+    const skyboxes = {
+        night: cubeTextureLoader.load([
+            'https://threejs.org/examples/textures/cube/MilkyWay/dark-s_px.jpg', 'https://threejs.org/examples/textures/cube/MilkyWay/dark-s_nx.jpg',
+            'https://threejs.org/examples/textures/cube/MilkyWay/dark-s_py.jpg', 'https://threejs.org/examples/textures/cube/MilkyWay/dark-s_ny.jpg',
+            'https://threejs.org/examples/textures/cube/MilkyWay/dark-s_pz.jpg', 'https://threejs.org/examples/textures/cube/MilkyWay/dark-s_nz.jpg',
+        ]),
+        sunrise: cubeTextureLoader.load([
+            'https://threejs.org/examples/textures/cube/sun_temple_stripe/px.jpg', 'https://threejs.org/examples/textures/cube/sun_temple_stripe/nx.jpg',
+            'https://threejs.org/examples/textures/cube/sun_temple_stripe/py.jpg', 'https://threejs.org/examples/textures/cube/sun_temple_stripe/ny.jpg',
+            'https://threejs.org/examples/textures/cube/sun_temple_stripe/pz.jpg', 'https://threejs.org/examples/textures/cube/sun_temple_stripe/nz.jpg',
+        ]),
+        day: cubeTextureLoader.load([
+            'https://threejs.org/examples/textures/cube/skyboxsun25deg/px.jpg', 'https://threejs.org/examples/textures/cube/skyboxsun25deg/nx.jpg',
+            'https://threejs.org/examples/textures/cube/skyboxsun25deg/py.jpg', 'https://threejs.org/examples/textures/cube/skyboxsun25deg/ny.jpg',
+            'https://threejs.org/examples/textures/cube/skyboxsun25deg/pz.jpg', 'https://threejs.org/examples/textures/cube/skyboxsun25deg/nz.jpg',
+        ])
+    };
+    
+    const skySettings = {
+        night:     { fog: new THREE.Color(0x000000), light: new THREE.Color(0xffd185), intensity: 2.0, sunScale: 1.0, ambient: 0.1 },
+        sunrise:   { fog: new THREE.Color(0x4c2a3b), light: new THREE.Color(0xff8c69), intensity: 4.0, sunScale: 1.0, ambient: 0.3 },
+        day:       { fog: new THREE.Color(0x87ceeb), light: new THREE.Color(0xffffff), intensity: 5.0, sunScale: 0.001, ambient: 0.8 },
+    };
+    const blackSettings = { fog: new THREE.Color(0x000000), light: new THREE.Color(0x000000), intensity: 0.0, sunScale: 0.001, ambient: 0.0 };
 
-    // --- Fractal Background ---
-    const fractalGeo = new THREE.SphereGeometry(1500, 32, 16); // Optimization: Reduced segments
-    const fractalMaterial = new THREE.ShaderMaterial({
+    let currentSky = 'night';
+    let targetSky = 'night';
+    scene.background = skyboxes[currentSky];
+
+    let isTransitioning = false;
+    let transitionPhase = 'none';
+    let transitionProgress = 0;
+    const transitionDuration = 2.0;
+
+    function transitionSky(toSky) {
+        if (isTransitioning) return;
+        targetSky = toSky;
+        isTransitioning = true;
+        transitionPhase = 'out';
+        transitionProgress = 0;
+    }
+
+    // --- Shared Noise Functions ---
+    const noiseGLSL = `
+        vec3 permute(vec3 x) { return mod(((x*34.0)+1.0)*x, 289.0); }
+        float snoise(vec2 v) {
+            const vec4 C = vec4(0.211324865405187, 0.366025403784439, -0.577350269189626, 0.024390243902439);
+            vec2 i = floor(v + dot(v, C.yy));
+            vec2 x0 = v - i + dot(i, C.xx);
+            vec2 i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
+            vec4 x12 = x0.xyxy + C.xxzz;
+            x12.xy -= i1;
+            i = mod(i, 289.0);
+            vec3 p = permute(permute(i.y + vec3(0.0, i1.y, 1.0)) + i.x + vec3(0.0, i1.x, 1.0));
+            vec3 m = max(0.5 - vec3(dot(x0, x0), dot(x12.xy, x12.xy), dot(x12.zw, x12.zw)), 0.0);
+            m = m*m; m = m*m;
+            vec3 x = 2.0 * fract(p * C.www) - 1.0;
+            vec3 h = abs(x) - 0.5;
+            vec3 ox = floor(x + 0.5);
+            vec3 a0 = x - ox;
+            m *= 1.79284291400159 - 0.85373472095314 * (a0*a0 + h*h);
+            vec3 g;
+            g.x = a0.x * x0.x + h.x * x0.y;
+            g.yz = a0.yz * x12.xz + h.yz * x12.yw;
+            return 130.0 * dot(m, g);
+        }
+
+        float fbm(vec2 p) {
+            float total = 0.0;
+            float amplitude = 1.0;
+            float frequency = 1.0;
+            for (int i = 0; i < 6; i++) { // Increased octaves for more detail
+                total += snoise(p * frequency) * amplitude;
+                frequency *= 2.0;
+                amplitude *= 0.5;
+            }
+            return total;
+        }
+    `;
+    
+    // --- Procedural Landscape ---
+    const landscapeGeo = new THREE.PlaneGeometry(4000, 4000, 128, 128);
+    const landscapeMaterial = new THREE.ShaderMaterial({
         uniforms: {
             uTime: { value: 0 },
-            uResolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) },
-            uSunDirection: { value: new THREE.Vector3().copy(sunPosition).normalize() }
+            uSunDirection: { value: sunLight.position.clone().normalize() },
+            uFogColor: { value: scene.fog.color },
+            uFogNear: { value: 500.0 },
+            uFogFar: { value: 1800.0 },
         },
         vertexShader: `
-            varying vec3 vWorldDirection;
+            uniform float uTime;
+            varying float vHeight;
+            varying vec3 vWorldPosition;
+            varying vec3 vNormal;
+
+            ${noiseGLSL}
 
             void main() {
-                vec4 worldPosition = modelMatrix * vec4( position, 1.0 );
-                vWorldDirection = worldPosition.xyz - cameraPosition;
-                gl_Position = projectionMatrix * viewMatrix * worldPosition;
+                vec2 pos = position.xy * 0.0005;
+                
+                vec2 warp = vec2(fbm(pos * 0.5 + 10.0), fbm(pos * 0.5 - 15.0)) * 0.5;
+                float height = fbm(pos + warp) * 350.0;
+                vHeight = height;
+                
+                vec3 newPosition = position + vec3(0.0, 0.0, height);
+
+                // Calculate normals for lighting
+                float epsilon = 1.0;
+
+                vec2 pos_dx_uv = (position.xy + vec2(epsilon, 0.0)) * 0.0005;
+                vec2 warp_dx = vec2(fbm(pos_dx_uv * 0.5 + 10.0), fbm(pos_dx_uv * 0.5 - 15.0)) * 0.5;
+                float h_dx = fbm(pos_dx_uv + warp_dx) * 350.0;
+                
+                vec2 pos_dy_uv = (position.xy + vec2(0.0, epsilon)) * 0.0005;
+                vec2 warp_dy = vec2(fbm(pos_dy_uv * 0.5 + 10.0), fbm(pos_dy_uv * 0.5 - 15.0)) * 0.5;
+                float h_dy = fbm(pos_dy_uv + warp_dy) * 350.0;
+
+                vec3 pos_dx = position + vec3(epsilon, 0.0, h_dx);
+                vec3 pos_dy = position + vec3(0.0, epsilon, h_dy);
+                vNormal = normalize(cross(pos_dy - newPosition, pos_dx - newPosition));
+                
+                vWorldPosition = (modelMatrix * vec4(newPosition, 1.0)).xyz;
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(newPosition, 1.0);
             }
         `,
         fragmentShader: `
-            uniform float uTime;
             uniform vec3 uSunDirection;
-            varying vec3 vWorldDirection;
+            uniform vec3 uFogColor;
+            uniform float uFogNear;
+            uniform float uFogFar;
+            uniform float uTime;
 
-            const int MAX_STEPS = 32; // Optimization: Reduced raymarching steps
-            const float MAX_DIST = 100.0;
-            const float SURF_DIST = 0.001;
+            varying float vHeight;
+            varying vec3 vWorldPosition;
+            varying vec3 vNormal;
 
-            float mandelbulbSDF(vec3 pos, float time) {
-                vec3 z = pos;
-                float dr = 1.0;
-                float r = 0.0;
-                float power = 8.0 + sin(time * 0.1) * 2.0; 
-
-                for (int i = 0; i < 5; i++) {
-                    r = length(z);
-                    if (r > 2.0) break;
-
-                    float theta = acos(z.z / r);
-                    float phi = atan(z.y, z.x);
-                    dr = pow(r, power - 1.0) * power * dr + 1.0;
-
-                    float zr = pow(r, power);
-                    theta = theta * power;
-                    phi = phi * power;
-
-                    z = zr * vec3(sin(theta) * cos(phi), sin(phi) * sin(theta), cos(theta));
-                    z += pos;
-                }
-                return 0.5 * log(r) * r / dr;
-            }
-
-            float map(vec3 p) {
-                float d = mandelbulbSDF(p * 0.5, uTime);
-                return d * 0.8;
-            }
-
-            vec3 getNormal(vec3 p) {
-                float d = map(p);
-                vec2 e = vec2(0.001, 0);
-                vec3 n = d - vec3(
-                    map(p - e.xyy),
-                    map(p - e.yxy),
-                    map(p - e.yyx)
-                );
-                return normalize(n);
-            }
-            
-            float rayMarch(vec3 ro, vec3 rd) {
-                float dO = 0.0;
-                for(int i = 0; i < MAX_STEPS; i++) {
-                    vec3 p = ro + rd * dO;
-                    float dS = map(p);
-                    dO += dS;
-                    if(dO > MAX_DIST || abs(dS) < SURF_DIST) break;
-                }
-                return dO;
-            }
-
-            vec3 palette(float t) {
-                vec3 a = vec3(0.5, 0.5, 0.5);
-                vec3 b = vec3(0.5, 0.5, 0.5);
-                vec3 c = vec3(1.0, 1.0, 1.0);
-                vec3 d = vec3(0.2, 0.4, 0.8);
-                return a + b * cos(6.28318 * (c * t + d));
+            vec3 permute(vec3 x) { return mod(((x*34.0)+1.0)*x, 289.0); }
+            float snoise(vec2 v) {
+                const vec4 C = vec4(0.211324865405187, 0.366025403784439, -0.577350269189626, 0.024390243902439);
+                vec2 i = floor(v + dot(v, C.yy));
+                vec2 x0 = v - i + dot(i, C.xx);
+                vec2 i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
+                vec4 x12 = x0.xyxy + C.xxzz;
+                x12.xy -= i1;
+                i = mod(i, 289.0);
+                vec3 p = permute(permute(i.y + vec3(0.0, i1.y, 1.0)) + i.x + vec3(0.0, i1.x, 1.0));
+                vec3 m = max(0.5 - vec3(dot(x0, x0), dot(x12.xy, x12.xy), dot(x12.zw, x12.zw)), 0.0);
+                m = m*m; m = m*m;
+                vec3 x = 2.0 * fract(p * C.www) - 1.0;
+                vec3 h = abs(x) - 0.5;
+                vec3 ox = floor(x + 0.5);
+                vec3 a0 = x - ox;
+                m *= 1.79284291400159 - 0.85373472095314 * (a0*a0 + h*h);
+                vec3 g;
+                g.x = a0.x * x0.x + h.x * x0.y;
+                g.yz = a0.yz * x12.xz + h.yz * x12.yw;
+                return 130.0 * dot(m, g);
             }
 
             void main() {
-                vec3 ro = cameraPosition;
-                vec3 rd = normalize(vWorldDirection);
-
-                float dist = rayMarch(ro, rd);
+                // Biome colors
+                vec3 deepWaterColor = vec3(0.05, 0.15, 0.25);
+                vec3 shallowWaterColor = vec3(0.1, 0.3, 0.4);
+                vec3 grassColor = vec3(0.25, 0.4, 0.15);
+                vec3 rockColor = vec3(0.35, 0.3, 0.25);
+                vec3 snowColor = vec3(0.9, 0.9, 0.95);
                 
-                if (dist > MAX_DIST) {
-                    gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0); // Black background
-                    return;
+                // Noise for transitions
+                float transitionNoise = snoise(vWorldPosition.xz * 0.01) * 10.0;
+                
+                // Determine biome based on height
+                vec3 biomeColor;
+                if (vHeight < -20.0) {
+                    float shimmer = sin(vWorldPosition.x * 0.1 + uTime) * 0.5 + 0.5;
+                    biomeColor = mix(deepWaterColor, shallowWaterColor, shimmer);
+                } else if (vHeight < 0.0) {
+                    biomeColor = mix(shallowWaterColor, grassColor, smoothstep(-20.0 + transitionNoise, 0.0 + transitionNoise, vHeight));
+                } else if (vHeight < 150.0) {
+                    biomeColor = mix(grassColor, rockColor, smoothstep(0.0 + transitionNoise, 150.0 + transitionNoise, vHeight));
+                } else if (vHeight < 200.0) {
+                    biomeColor = mix(rockColor, snowColor, smoothstep(150.0 + transitionNoise, 200.0 + transitionNoise, vHeight));
+                } else {
+                    biomeColor = snowColor;
                 }
-                
-                vec3 p = ro + rd * dist;
-                vec3 n = getNormal(p);
-                
-                float light = dot(n, uSunDirection);
-                
-                float color_t = length(p) * 0.1 + uTime * 0.05;
-                vec3 col = palette(color_t);
-                col = col * (0.5 + 0.5 * light);
-                col = mix(col, vec3(0.0), 1.0 - exp(-0.0005 * dist * dist)); // Fog
 
-                gl_FragColor = vec4(col, 1.0);
+                // Lighting
+                float diffuse = max(0.0, dot(vNormal, uSunDirection));
+                vec3 finalColor = biomeColor * (vec3(0.3) + diffuse * 0.7);
+
+                // Fog
+                float dist = length(vWorldPosition - cameraPosition);
+                float fogFactor = smoothstep(uFogNear, uFogFar, dist);
+                finalColor = mix(finalColor, uFogColor, fogFactor);
+
+                gl_FragColor = vec4(finalColor, 1.0);
             }
         `,
-        side: THREE.BackSide,
-        depthWrite: false
+        side: THREE.DoubleSide
     });
-    const fractalBackground = new THREE.Mesh(fractalGeo, fractalMaterial);
-    scene.add(fractalBackground);
+    const landscape = new THREE.Mesh(landscapeGeo, landscapeMaterial);
+    landscape.rotation.x = -Math.PI / 2;
+    landscape.position.y = -50;
+    scene.add(landscape);
 
-    // --- Wormhole Tunnel ---
-    function createWormhole() {
-        // 1. Create a curve
-        const path = new THREE.CatmullRomCurve3([
-            new THREE.Vector3(100, 0, -100),
-            new THREE.Vector3(50, 20, -200),
-            new THREE.Vector3(0, 0, -300),
-            new THREE.Vector3(-50, -20, -400),
-            new THREE.Vector3(-100, 0, -500),
-            new THREE.Vector3(-50, 20, -600),
-            new THREE.Vector3(0, 0, -700),
-            new THREE.Vector3(50, -20, -800),
-            new THREE.Vector3(100, 0, -900),
-        ]);
-
-        // 2. Create geometry
-        const tubeGeo = new THREE.TubeGeometry(path, 80, 20, 12, false); // Optimization: Reduced segments
-
-        // 3. Create shader material
-        const wormholeMaterial = new THREE.ShaderMaterial({
-            uniforms: {
-                uTime: { value: 0 },
-                uColor1: { value: new THREE.Color(0x3b82f6) },
-                uColor2: { value: new THREE.Color(0x8b5cf6) },
-            },
-            vertexShader: `
-                uniform float uTime;
-                varying vec2 vUv;
-
-                // Perlin 3D noise
-                vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
-                vec4 mod289(vec4 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
-                vec4 permute(vec4 x) { return mod289(((x*34.0)+1.0)*x); }
-                vec4 taylorInvSqrt(vec4 r) { return 1.79284291400159 - 0.85373472095314 * r; }
-
-                float snoise(vec3 v) {
-                    const vec2  C = vec2(1.0/6.0, 1.0/3.0) ;
-                    const vec4  D = vec4(0.0, 0.5, 1.0, 2.0);
-                    vec3 i  = floor(v + dot(v, C.yyy) );
-                    vec3 x0 =   v - i + dot(i, C.xxx) ;
-                    vec3 g = step(x0.yzx, x0.xyz);
-                    vec3 l = 1.0 - g;
-                    vec3 i1 = min( g.xyz, l.zxy );
-                    vec3 i2 = max( g.xyz, l.zxy );
-                    vec3 x1 = x0 - i1 + C.xxx;
-                    vec3 x2 = x0 - i2 + C.yyy;
-                    vec3 x3 = x0 - D.yyy;
-                    i = mod289(i);
-                    vec4 p = permute( permute( permute(
-                                i.z + vec4(0.0, i1.z, i2.z, 1.0 ))
-                            + i.y + vec4(0.0, i1.y, i2.y, 1.0 ))
-                            + i.x + vec4(0.0, i1.x, i2.x, 1.0 ));
-                    float n_ = 0.142857142857;
-                    vec3  ns = n_ * D.wyz - D.xzx;
-                    vec4 j = p - 49.0 * floor(p * ns.z * ns.z);
-                    vec4 x_ = floor(j * ns.z);
-                    vec4 y_ = floor(j - 7.0 * x_ );
-                    vec4 x = x_ *ns.x + ns.yyyy;
-                    vec4 y = y_ *ns.x + ns.yyyy;
-                    vec4 h = 1.0 - abs(x) - abs(y);
-                    vec4 b0 = vec4( x.xy, y.xy );
-                    vec4 b1 = vec4( x.zw, y.zw );
-                    vec4 s0 = floor(b0)*2.0 + 1.0;
-                    vec4 s1 = floor(b1)*2.0 + 1.0;
-                    vec4 sh = -step(h, vec4(0.0));
-                    vec4 a0 = b0.xzyw + s0.xzyw*sh.xxyy ;
-                    vec4 a1 = b1.xzyw + s1.xzyw*sh.zzww ;
-                    vec3 p0 = vec3(a0.xy,h.x);
-                    vec3 p1 = vec3(a0.zw,h.y);
-                    vec3 p2 = vec3(a1.xy,h.z);
-                    vec3 p3 = vec3(a1.zw,h.w);
-                    vec4 norm = taylorInvSqrt(vec4(dot(p0,p0), dot(p1,p1), dot(p2,p2), dot(p3,p3)));
-                    p0 *= norm.x;
-                    p1 *= norm.y;
-                    p2 *= norm.z;
-                    p3 *= norm.w;
-                    vec4 m = max(0.6 - vec4(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3)), 0.0);
-                    m = m * m;
-                    return 42.0 * dot( m*m, vec4( dot(p0,x0), dot(p1,x1), dot(p2,x2), dot(p3,x3) ) );
-                }
-
-                void main() {
-                    vUv = uv;
-                    vec3 pos = position;
-                    float noise = snoise(pos * 0.1 + uTime * 0.2) * 2.0;
-                    pos += normal * noise;
-                    gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
-                }
-            `,
-            fragmentShader: `
-                uniform float uTime;
-                uniform vec3 uColor1;
-                uniform vec3 uColor2;
-                varying vec2 vUv;
-
-                float random (vec2 st) {
-                    return fract(sin(dot(st.xy, vec2(12.9898,78.233))) * 43758.5453123);
-                }
-
-                float noise(vec2 st) {
-                    vec2 i = floor(st);
-                    vec2 f = fract(st);
-                    float a = random(i);
-                    float b = random(i + vec2(1.0, 0.0));
-                    float c = random(i + vec2(0.0, 1.0));
-                    float d = random(i + vec2(1.0, 1.0));
-                    vec2 u = f * f * (3.0 - 2.0 * f);
-                    return mix(a, b, u.x) + (c - a) * u.y * (1.0 - u.x) + (d - b) * u.x * u.y;
-                }
-
-                void main() {
-                    vec2 uv = vUv;
-                    uv.x -= uTime * 0.1;
-
-                    float n = noise(uv * vec2(10.0, 2.0)) * 0.5 + noise(uv * vec2(20.0, 4.0)) * 0.25;
-                    n = pow(n, 2.0);
-
-                    vec3 color = mix(uColor1, uColor2, n);
-                    
-                    float streaks = sin((uv.y - uTime * 0.05) * 50.0) * 0.5 + 0.5;
-                    streaks = smoothstep(0.8, 1.0, streaks);
-                    color += vec3(1.0, 1.0, 1.0) * streaks * 0.5;
-
-                    float edgeFade = smoothstep(0.0, 0.1, vUv.y) * smoothstep(1.0, 0.9, vUv.y);
-                    
-                    float alpha = n * 1.5 + streaks;
-
-                    gl_FragColor = vec4(color, alpha * edgeFade);
-                }
-            `,
-            transparent: true,
-            blending: THREE.AdditiveBlending,
-            side: THREE.BackSide,
-            depthWrite: false,
-        });
-        
-        const wormhole = new THREE.Mesh(tubeGeo, wormholeMaterial);
-        scene.add(wormhole);
-        return wormhole;
+    // --- Instanced Trees ---
+    const snoise = (function() {
+      // Port of GLSL snoise to JS
+      const C = { x: 0.211324865405187, y: 0.366025403784439, z: -0.577350269189626, w: 0.024390243902439 };
+      function permute(x) {
+        const x_x = ((x.x * 34.0) + 1.0) * x.x % 289.0;
+        const x_y = ((x.y * 34.0) + 1.0) * x.y % 289.0;
+        const x_z = ((x.z * 34.0) + 1.0) * x.z % 289.0;
+        return { x: x_x, y: x_y, z: x_z };
+      }
+      return function snoise(v_x, v_y) {
+        const i_x = Math.floor(v_x + (v_x+v_y)*C.y);
+        const i_y = Math.floor(v_y + (v_x+v_y)*C.y);
+        const x0_x = v_x - i_x + (i_x+i_y)*C.x;
+        const x0_y = v_y - i_y + (i_x+i_y)*C.x;
+        const i1_x = (x0_x > x0_y) ? 1.0 : 0.0;
+        const i1_y = (x0_x > x0_y) ? 0.0 : 1.0;
+        const x12_x = x0_x + C.x * 2.0 - i1_x; const x12_y = x0_y + C.y * 2.0 - i1_y;
+        const x12_z = x0_x + C.z; const x12_w = x0_y + C.z;
+        const i_mod_x = i_x % 289.0; const i_mod_y = i_y % 289.0;
+        const p = permute({x: i_mod_y + 0.0, y: i_mod_y + i1_y, z: i_mod_y + 1.0});
+        const p_perm = permute({x: p.x + i_mod_x, y: p.y + i_mod_x, z: p.z + i_mod_x});
+        let m_x = Math.max(0.5 - (x0_x*x0_x+x0_y*x0_y), 0.0);
+        let m_y = Math.max(0.5 - (x12_x*x12_x+x12_y*x12_y), 0.0);
+        let m_z = Math.max(0.5 - (x12_z*x12_z+x12_w*x12_w), 0.0);
+        m_x *= m_x; m_y *= m_y; m_z *= m_z;
+        m_x *= m_x; m_y *= m_y; m_z *= m_z;
+        const x_perm_x = 2.0 * (p_perm.x*C.w % 1) - 1.0;
+        const x_perm_y = 2.0 * (p_perm.y*C.w % 1) - 1.0;
+        const x_perm_z = 2.0 * (p_perm.z*C.w % 1) - 1.0;
+        const h = { x: Math.abs(x_perm_x) - 0.5, y: Math.abs(x_perm_y) - 0.5, z: Math.abs(x_perm_z) - 0.5 };
+        const ox = { x: Math.floor(x_perm_x + 0.5), y: Math.floor(x_perm_y + 0.5), z: Math.floor(x_perm_z + 0.5) };
+        const a0 = { x: x_perm_x - ox.x, y: x_perm_y - ox.y, z: x_perm_z - ox.z };
+        m_x *= 1.79284291400159 - 0.85373472095314 * (a0.x*a0.x + h.x*h.x);
+        m_y *= 1.79284291400159 - 0.85373472095314 * (a0.y*a0.y + h.y*h.y);
+        m_z *= 1.79284291400159 - 0.85373472095314 * (a0.z*a0.z + h.z*h.z);
+        const g = { x: a0.x*x0_x + h.x*x0_y, y: a0.y*x12_x + h.y*x12_y, z: a0.z*x12_z + h.z*x12_w };
+        return 130.0 * (m_x*g.x + m_y*g.y + m_z*g.z);
+      };
+    })();
+    function fbm(x, y) {
+      let total = 0.0, amplitude = 1.0, frequency = 1.0;
+      for (let i = 0; i < 6; i++) {
+        total += snoise(x * frequency, y * frequency) * amplitude;
+        frequency *= 2.0;
+        amplitude *= 0.5;
+      }
+      return total;
     }
-    const wormhole = createWormhole();
+    
+    function createTrees() {
+        const treeCount = 8000;
+        const trunkGeo = new THREE.CylinderGeometry(0.2, 0.3, 2, 8);
+        trunkGeo.translate(0, 1, 0);
+        const leavesGeo = new THREE.ConeGeometry(1.5, 4, 8);
+        leavesGeo.translate(0, 3.5, 0);
+        const treeGeo = mergeGeometries([trunkGeo, leavesGeo]);
 
-    // --- Fractal Planet ---
-    function createFractalPlanet() {
-        const planetGeo = new THREE.SphereGeometry(800, 32, 16); // Optimization: Reduced segments
-        const planetMaterial = new THREE.ShaderMaterial({
+        const treeMaterial = new THREE.ShaderMaterial({
             uniforms: {
                 uTime: { value: 0 },
-                uSunDirection: { value: new THREE.Vector3().copy(sunPosition).normalize() }
+                uSunDirection: { value: sunLight.position.clone().normalize() },
             },
             vertexShader: `
-                varying vec3 vWorldDirection;
-                void main() {
-                    vec4 worldPosition = modelMatrix * vec4( position, 1.0 );
-                    vWorldDirection = worldPosition.xyz - cameraPosition;
-                    gl_Position = projectionMatrix * viewMatrix * worldPosition;
-                }
-            `,
-            fragmentShader: `
+                attribute vec3 instanceColor;
+                varying vec3 vColor;
+                varying float vLighting;
+
                 uniform float uTime;
                 uniform vec3 uSunDirection;
-                varying vec3 vWorldDirection;
-
-                const int MAX_STEPS = 48; // Optimization: Reduced raymarching steps
-                const float MAX_DIST = 1000.0;
-                const float SURF_DIST = 0.01;
-
-                // --- Noise Function (Simplex) ---
-                vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
-                vec4 mod289(vec4 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
-                vec4 permute(vec4 x) { return mod289(((x*34.0)+1.0)*x); }
-                vec4 taylorInvSqrt(vec4 r) { return 1.79284291400159 - 0.85373472095314 * r; }
-
-                float snoise(vec3 v) {
-                    const vec2 C = vec2(1.0/6.0, 1.0/3.0);
-                    const vec4 D = vec4(0.0, 0.5, 1.0, 2.0);
-                    vec3 i = floor(v + dot(v, C.yyy));
-                    vec3 x0 = v - i + dot(i, C.xxx);
-                    vec3 g = step(x0.yzx, x0.xyz);
-                    vec3 l = 1.0 - g;
-                    vec3 i1 = min(g.xyz, l.zxy);
-                    vec3 i2 = max(g.xyz, l.zxy);
-                    vec3 x1 = x0 - i1 + C.xxx;
-                    vec3 x2 = x0 - i2 + C.yyy;
-                    vec3 x3 = x0 - D.yyy;
-                    i = mod289(i);
-                    vec4 p = permute( permute( permute( i.z + vec4(0.0, i1.z, i2.z, 1.0 )) + i.y + vec4(0.0, i1.y, i2.y, 1.0 )) + i.x + vec4(0.0, i1.x, i2.x, 1.0 ));
-                    float n_ = 0.142857142857;
-                    vec3 ns = n_ * D.wyz - D.xzx;
-                    vec4 j = p - 49.0 * floor(p * ns.z * ns.z);
-                    vec4 x_ = floor(j * ns.z);
-                    vec4 y_ = floor(j - 7.0 * x_);
-                    vec4 x = x_ *ns.x + ns.yyyy;
-                    vec4 y = y_ *ns.x + ns.yyyy;
-                    vec4 h = 1.0 - abs(x) - abs(y);
-                    vec4 b0 = vec4(x.xy, y.xy);
-                    vec4 b1 = vec4(x.zw, y.zw);
-                    vec4 s0 = floor(b0)*2.0 + 1.0;
-                    vec4 s1 = floor(b1)*2.0 + 1.0;
-                    vec4 sh = -step(h, vec4(0.0));
-                    vec4 a0 = b0.xzyw + s0.xzyw*sh.xxyy;
-                    vec4 a1 = b1.xzyw + s1.xzyw*sh.zzww;
-                    vec3 p0 = vec3(a0.xy,h.x);
-                    vec3 p1 = vec3(a0.zw,h.y);
-                    vec3 p2 = vec3(a1.xy,h.z);
-                    vec3 p3 = vec3(a1.zw,h.w);
-                    vec4 norm = taylorInvSqrt(vec4(dot(p0,p0), dot(p1,p1), dot(p2,p2), dot(p3,p3)));
-                    p0 *= norm.x; p1 *= norm.y; p2 *= norm.z; p3 *= norm.w;
-                    vec4 m = max(0.6 - vec4(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3)), 0.0);
-                    m = m * m;
-                    return 42.0 * dot( m*m, vec4( dot(p0,x0), dot(p1,x1), dot(p2,x2), dot(p3,x3) ) );
-                }
                 
-                // --- Fractal Brownian Motion for Terrain ---
-                float fbm(vec3 p) {
-                    float v = 0.0;
-                    float a = 0.5;
-                    vec3 shift = vec3(100.0);
-                    for (int i = 0; i < 5; ++i) { // Optimization: Reduced octaves
-                        v += a * snoise(p);
-                        p = p * 2.0 + shift;
-                        a *= 0.5;
-                    }
-                    return v;
-                }
+                ${noiseGLSL}
 
-                // --- SDFs (Signed Distance Functions) ---
-                float sdCylinder(vec3 p, float h, float r) {
-                    vec2 d = abs(vec2(length(p.xz), p.y)) - vec2(r, h);
-                    return min(max(d.x, d.y), 0.0) + length(max(d, 0.0));
-                }
-                
-                float sdFractalTree(vec3 p) {
-                    float d = 1e10;
-                    p.y -= 30.0; // Raise tree a bit
-                    vec3 p_orig = p;
-                    float scale = 1.0;
-                    mat2 rot = mat2(cos(0.8), -sin(0.8), sin(0.8), cos(0.8));
-
-                    for (int i = 0; i < 5; i++) { // Optimization: Reduced iterations
-                        p.y -= 2.0 * scale;
-                        p.xz = abs(p.xz);
-                        p.xz -= 1.0 * scale;
-                        p.xz *= rot;
-                        d = min(d, sdCylinder(p, 5.0 * scale, 0.2 * scale));
-                        scale *= 0.8;
-                    }
-                    return d;
-                }
-
-                vec2 opRep(vec3 p, vec3 c) {
-                    vec3 q = mod(p + 0.5 * c, c) - 0.5 * c;
-                    return vec2(sdFractalTree(q), 2.0);
-                }
-
-                // --- Main Scene Map ---
-                vec2 map(vec3 p) {
-                    // Ground / Mountains
-                    float ground = p.y + fbm(p * 0.01) * 30.0;
-                    vec2 res = vec2(ground, 1.0);
-
-                    // Trees
-                    vec2 tree = opRep(p, vec3(40.0, 0.0, 40.0));
-                    tree.x += 0.01; // Make sure tree SDF is slightly positive at base
-                    
-                    if (tree.x < res.x) {
-                       res = tree;
-                    }
-
-                    return res;
-                }
-                
-                vec3 getNormal(vec3 p) {
-                    vec2 e = vec2(0.01, 0);
-                    vec3 n = map(p).x - vec3(
-                        map(p - e.xyy).x,
-                        map(p - e.yxy).x,
-                        map(p - e.yyx).x
-                    );
-                    return normalize(n);
-                }
-
-                float rayMarch(vec3 ro, vec3 rd) {
-                    float dO = 0.0;
-                    for(int i = 0; i < MAX_STEPS; i++) {
-                        vec3 p = ro + rd * dO;
-                        float dS = map(p).x;
-                        dO += dS;
-                        if(dO > MAX_DIST || abs(dS) < SURF_DIST) break;
-                    }
-                    return dO;
-                }
-
-                // --- Main Render Function ---
                 void main() {
-                    vec3 ro = cameraPosition;
-                    vec3 rd = normalize(vWorldDirection);
-                    
-                    float dist = rayMarch(ro, rd);
-                    
-                    if (dist > MAX_DIST) {
-                        discard;
-                    }
-                    
-                    vec3 p = ro + rd * dist;
-                    vec3 n = getNormal(p);
-                    vec2 res = map(p);
-                    float materialID = res.y;
+                    vColor = instanceColor;
 
-                    // --- Lighting ---
-                    float sun_d = max(dot(n, uSunDirection), 0.0);
-                    float ambient = 0.2;
-                    float light = ambient + sun_d * 0.8;
+                    vec3 instancePosition = (instanceMatrix * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
+                    vec2 pos = instancePosition.xz * 0.0005;
+                    vec2 warp = vec2(fbm(pos * 0.5 + 10.0), fbm(pos * 0.5 - 15.0)) * 0.5;
+                    float height = fbm(pos + warp) * 350.0;
                     
-                    // --- Coloring ---
-                    vec3 col;
-                    if (materialID == 1.0) { // Ground
-                        float height_factor = smoothstep(-20.0, 30.0, p.y);
-                        vec3 rockColor = vec3(0.3);
-                        vec3 snowColor = vec3(0.9);
-                        col = mix(rockColor, snowColor, height_factor);
-                    } else { // Trees
-                        col = vec3(0.7, 0.8, 0.95) * 1.2;
-                    }
+                    vec3 transformed = position;
+                    transformed.y *= (instanceColor.g * 0.5 + 0.5); // Vary height
+                    transformed.x *= (instanceColor.r * 0.2 + 0.9); // Vary width
+                    transformed.z *= (instanceColor.b * 0.2 + 0.9); // Vary width
                     
-                    col *= light;
-                    
-                    // --- Fog ---
-                    float fog_factor = 1.0 - exp(-0.002 * dist * dist);
-                    col = mix(col, vec3(0.01, 0.02, 0.03), fog_factor);
+                    vec3 finalPosition = transformed + vec3(0.0, height, 0.0);
 
-                    gl_FragColor = vec4(col, 1.0);
+                    // Basic lighting
+                    vec3 normal3 = normalize(normal);
+                    vLighting = max(0.2, dot(normal3, uSunDirection));
+
+                    gl_Position = projectionMatrix * viewMatrix * instanceMatrix * vec4(finalPosition, 1.0);
                 }
             `,
-            side: THREE.BackSide,
+            fragmentShader: `
+                varying vec3 vColor;
+                varying float vLighting;
+                void main() {
+                    vec3 finalColor = mix(vec3(0.0, 0.1, 0.0), vec3(0.1, 0.3, 0.05), vColor.g);
+                    gl_FragColor = vec4(finalColor * vLighting, 1.0);
+                }
+            `
         });
-        const planet = new THREE.Mesh(planetGeo, planetMaterial);
-        planet.position.set(0, 0, -1100);
-        scene.add(planet);
-        return planet;
+        
+        const instancedTrees = new THREE.InstancedMesh(treeGeo, treeMaterial, treeCount);
+        
+        const dummy = new THREE.Object3D();
+        const color = new THREE.Color();
+        const landscapeSize = 4000;
+        let count = 0;
+        const colorAttr = new THREE.InstancedBufferAttribute(new Float32Array(treeCount * 3), 3);
+
+        for (let i = 0; i < treeCount; i++) {
+            const x = Math.random() * landscapeSize - landscapeSize / 2;
+            const z = Math.random() * landscapeSize - landscapeSize / 2;
+            const px = x * 0.0005;
+            const pz = z * 0.0005;
+            const warp_vec_x = fbm(px * 0.5 + 10.0, pz * 0.5 + 10.0);
+            const warp_vec_y = fbm(px * 0.5 - 15.0, pz * 0.5 - 15.0);
+            const warpX = warp_vec_x * 0.5;
+            const warpZ = warp_vec_y * 0.5;
+            const height = fbm(px + warpX, pz + warpZ) * 350.0;
+            
+            if(height > 0 && height < 120) { // Only place on grass
+                dummy.position.set(x, 0, z); // Y position is handled in shader
+                dummy.rotation.y = Math.random() * Math.PI * 2;
+                dummy.updateMatrix();
+                instancedTrees.setMatrixAt(count, dummy.matrix);
+                
+                color.setRGB(Math.random(), Math.random(), Math.random());
+                colorAttr.setXYZ(count, color.r, color.g, color.b);
+                count++;
+            }
+        }
+        instancedTrees.instanceMatrix.needsUpdate = true;
+        instancedTrees.count = count;
+        instancedTrees.geometry.setAttribute('instanceColor', colorAttr);
+        scene.add(instancedTrees);
+        return instancedTrees;
     }
 
-    const fractalPlanet = createFractalPlanet();
-
+    const trees = createTrees();
 
     // --- Companion Sphere ---
-    const companionGeo = new THREE.SphereGeometry(1, 24, 12); // Optimization: Reduced segments
+    const companionGeo = new THREE.SphereGeometry(1, 32, 32);
     const companionMaterial = new THREE.ShaderMaterial({
         uniforms: {
             uTime: { value: 0 },
@@ -1108,24 +979,16 @@
             }
 
             void main() {
-                // Fresnel for edge glow
                 vec3 viewDirection = normalize(-vPosition);
                 float fresnel = 1.0 - dot(viewDirection, vNormal);
-                fresnel = pow(fresnel, 4.0) * (1.5 + uSpeed * 5.0); // Glow more with speed
-
-                // Core pulse
+                fresnel = pow(fresnel, 4.0) * (1.5 + uSpeed * 5.0);
                 float core = 1.0 - length(vPosition);
                 core = smoothstep(0.6, 1.0, core);
                 core *= (0.5 + sin(uTime * 5.0) * 0.5);
-
-                // Surface energy pattern
                 float noise = simpleNoise(vWorldPosition * 0.5, uSpeed);
                 noise = smoothstep(0.2, 0.8, noise);
-
-                // Combine
                 vec3 finalColor = uColor * (noise * 0.5 + fresnel + core * 0.5);
                 float alpha = clamp(fresnel + noise * 0.1 + core * 0.2, 0.0, 1.0);
-
                 gl_FragColor = vec4(finalColor, alpha);
             }
         `,
@@ -1147,11 +1010,9 @@
         const group = new THREE.Group();
         group.userData.color = new THREE.Color(color);
 
-        // --- Custom Shader Material for Portals ---
         const vertexShader = `
             varying vec3 vNormal;
-            varying vec3 vPosition; // Position in view space
-
+            varying vec3 vPosition;
             void main() {
                 vNormal = normalize(normalMatrix * normal);
                 vPosition = vec3(modelViewMatrix * vec4(position, 1.0));
@@ -1162,50 +1023,36 @@
         const fragmentShader = `
             uniform vec3 uColor;
             uniform float uTime;
-
             varying vec3 vNormal;
             varying vec3 vPosition;
-
             void main() {
-                // Fresnel effect for edge glow
                 vec3 viewDirection = normalize(-vPosition);
                 float fresnel = 1.0 - dot(viewDirection, vNormal);
-                fresnel = pow(fresnel, 3.0); // Power of 3.0 for a tight glow
-
-                // Simple animated bands for energy effect
+                fresnel = pow(fresnel, 3.0);
                 float bands = sin(vPosition.y * 15.0 - uTime * 3.0) * 0.5 + 0.5;
                 float energy = smoothstep(0.45, 0.55, bands);
-
-                // Combine effects
                 float intensity = fresnel * 1.5 + energy * 0.3;
                 float alpha = pow(fresnel, 2.0) + energy * 0.2;
-
                 gl_FragColor = vec4(uColor * intensity, alpha);
             }
         `;
         
         const portalMaterial = new THREE.ShaderMaterial({
-            uniforms: {
-                uTime: { value: 0 },
-                uColor: { value: new THREE.Color(color) },
-            },
-            vertexShader,
-            fragmentShader,
-            transparent: true,
-            blending: THREE.AdditiveBlending,
-            depthWrite: false
+            uniforms: { uTime: { value: 0 }, uColor: { value: new THREE.Color(color) } },
+            vertexShader, fragmentShader,
+            transparent: true, blending: THREE.AdditiveBlending, depthWrite: false
         });
 
-        group.userData.material = portalMaterial; // Store material to update uniforms
+        group.userData.material = portalMaterial;
 
-        const mainRingGeo = new THREE.TorusGeometry(5, 0.2, 16, 48); // Optimization: Reduced segments
+        const mainRingGeo = new THREE.TorusGeometry(5, 0.2, 16, 64);
         const mainRing = new THREE.Mesh(mainRingGeo, portalMaterial);
 
-        const innerRingGeo = new THREE.TorusGeometry(4.2, 0.1, 16, 48); // Optimization: Reduced segments
-        const innerRing = new THREE.Mesh(innerRingGeo, portalMaterial); // Share the same material
+        const innerRingGeo = new THREE.TorusGeometry(4.2, 0.1, 16, 64);
+        const innerRing = new THREE.Mesh(innerRingGeo, portalMaterial);
         innerRing.rotation.x = Math.PI / 2;
         
-        const coreGeo = new THREE.SphereGeometry(0.5, 16, 8); // Optimization: Reduced segments
+        const coreGeo = new THREE.SphereGeometry(0.5, 32, 32);
         const coreMat = new THREE.MeshBasicMaterial({ color: color, transparent: true, opacity: 0.8 });
         const core = new THREE.Mesh(coreGeo, coreMat);
         
@@ -1229,6 +1076,7 @@
         createPortal('Инструкторы', new THREE.Vector3(-40, 10, 0), 0x8b5cf6, 'instructors'),
         createPortal('Расписание', new THREE.Vector3(40, -10, 0), 0x10b981, 'schedule'),
         createPortal('Контакты', new THREE.Vector3(0, -5, 50), 0xf59e0b, 'contact'),
+        createPortal('Сменить Время', new THREE.Vector3(0, 20, 0), 0xffffff, 'time_cycle'),
     ];
 
     // --- Raycasting for Interaction ---
@@ -1246,37 +1094,57 @@
       const delta = clock.getDelta();
       const time = clock.getElapsedTime();
 
-      // Update Sun
       sunMaterial.uniforms.uTime.value = time;
+      landscapeMaterial.uniforms.uTime.value = time;
+      trees.material.uniforms.uTime.value = time;
 
-      // Update Fractal Background
-      fractalMaterial.uniforms.uTime.value = time;
+      // --- Dynamic Sky Transition ---
+      if (isTransitioning) {
+          transitionProgress += delta / transitionDuration;
+          const easedProgress = THREE.MathUtils.smootherstep(transitionProgress, 0, 1);
 
-      // Update Fractal Planet
-      fractalPlanet.material.uniforms.uTime.value = time;
+          if (transitionPhase === 'out') {
+              const from = skySettings[currentSky];
+              scene.fog.color.lerpColors(from.fog, blackSettings.fog, easedProgress);
+              sunLight.color.lerpColors(from.light, blackSettings.light, easedProgress);
+              sunLight.intensity = THREE.MathUtils.lerp(from.intensity, blackSettings.intensity, easedProgress);
+              ambientLight.intensity = THREE.MathUtils.lerp(from.ambient, blackSettings.ambient, easedProgress);
+              sun.scale.setScalar(THREE.MathUtils.lerp(from.sunScale, blackSettings.sunScale, easedProgress));
+              
+              if (transitionProgress >= 1) {
+                  scene.background = skyboxes[targetSky];
+                  transitionPhase = 'in';
+                  transitionProgress = 0;
+              }
+          } else if (transitionPhase === 'in') {
+              const to = skySettings[targetSky];
+              scene.fog.color.lerpColors(blackSettings.fog, to.fog, easedProgress);
+              sunLight.color.lerpColors(blackSettings.light, to.light, easedProgress);
+              sunLight.intensity = THREE.MathUtils.lerp(blackSettings.intensity, to.intensity, easedProgress);
+              ambientLight.intensity = THREE.MathUtils.lerp(blackSettings.ambient, to.ambient, easedProgress);
+              sun.scale.setScalar(THREE.MathUtils.lerp(blackSettings.sunScale, to.sunScale, easedProgress));
 
-      // Update Wormhole
-      wormhole.material.uniforms.uTime.value = time;
+              if (transitionProgress >= 1) {
+                  isTransitioning = false;
+                  transitionPhase = 'none';
+                  currentSky = targetSky;
+              }
+          }
+          landscapeMaterial.uniforms.uFogColor.value = scene.fog.color;
+      }
+
 
       // Update Portals
       portals.forEach((p, i) => {
-        p.children[0].rotation.y += 0.003; // mainRing
-        p.children[1].rotation.y -= 0.008; // innerRing
+        p.children[0].rotation.y += 0.003;
+        p.children[1].rotation.y -= 0.008;
         p.children[1].rotation.x += 0.003;
-        
-        // Update shader uniforms on the shared material
         p.userData.material.uniforms.uTime.value = time;
-        
         const pulse = 1 + Math.sin(time * 2 + i) * 0.05;
         p.scale.set(pulse, pulse, pulse);
-        
         const intensity = 0.8 + Math.sin(time * 3 + i) * 0.2;
         const color = p.userData.color.clone().multiplyScalar(intensity);
-        
-        // Update shader color uniform
         p.userData.material.uniforms.uColor.value.copy(color);
-
-        // Update core color
         p.children[2].material.color.copy(color);
       });
 
@@ -1295,6 +1163,9 @@
       if (moveUp) velocity.y += speed * delta;
       if (moveDown) velocity.y -= speed * delta;
       
+      const playerYFloor = -45.0; // Ground level check
+      let playerObject = isMobile ? camera : controls.getObject();
+
       if (isMobile) {
           camera.rotation.y -= cameraLookSpeed.x;
           camera.rotation.x -= cameraLookSpeed.y;
@@ -1316,20 +1187,30 @@
           controls.getObject().position.y += velocity.y * delta;
       }
 
+      const playerPos = playerObject.position;
+      const px = playerPos.x * 0.0005;
+      const pz = playerPos.z * 0.0005;
+      const warp_vec_x = fbm(px * 0.5 + 10.0, pz * 0.5 + 10.0);
+      const warp_vec_y = fbm(px * 0.5 - 15.0, pz * 0.5 - 15.0);
+      const warpX = warp_vec_x * 0.5;
+      const warpZ = warp_vec_y * 0.5;
+      const terrainHeight = fbm(px + warpX, pz + warpZ) * 350.0 + landscape.position.y + 5.0;
+      if (playerPos.y < terrainHeight) {
+          playerPos.y = terrainHeight;
+          velocity.y = 0;
+      }
+
+
       // Update Companion Sphere
       const targetPosition = new THREE.Vector3();
       companionTarget.getWorldPosition(targetPosition);
 
-      companionSphere.position.lerp(targetPosition, 0.03); // Smooth follow
+      companionSphere.position.lerp(targetPosition, 0.03); 
 
-      // Add bobbing motion
       companionSphere.position.y += Math.sin(time * 2.5) * 0.02;
       companionSphere.position.x += Math.cos(time * 2.0) * 0.02;
-
-      // Look at the player
       companionSphere.lookAt(camera.position);
 
-      // Update shader
       companionSphere.material.uniforms.uTime.value = time;
       const currentSpeed = velocity.length();
       companionSphere.material.uniforms.uSpeed.value = Math.min(currentSpeed / speed, 1.0);
@@ -1371,7 +1252,6 @@
       renderer.setSize(window.innerWidth, window.innerHeight);
       composer.setSize(window.innerWidth, window.innerHeight);
       labelRenderer.setSize(window.innerWidth, window.innerHeight);
-      fractalMaterial.uniforms.uResolution.value.set(window.innerWidth, window.innerHeight);
     });
 
     // --- Modal Logic & Data ---
@@ -1407,10 +1287,20 @@
     }
 
     function openModalForObject(object) {
+        const dataKey = object.userData.dataKey;
+        
+        if (dataKey === 'time_cycle') {
+            const skyOrder = ['night', 'sunrise', 'day'];
+            const currentIndex = skyOrder.indexOf(currentSky);
+            const nextIndex = (currentIndex + 1) % skyOrder.length;
+            transitionSky(skyOrder[nextIndex]);
+            return;
+        }
+
         if (!isMobile) {
           controls.unlock();
         }
-        const dataKey = object.userData.dataKey;
+
         let contentHTML = `
             <button id="modal-close" class="modal-close-btn" aria-label="Закрыть">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
@@ -1466,7 +1356,7 @@
         }
 
         modalContent.innerHTML = contentHTML;
-        modalContent.scrollTop = 0; // Reset scroll position
+        modalContent.scrollTop = 0;
         modalContainer.classList.add('visible');
 
         document.getElementById('modal-close').addEventListener('click', closeModal);
