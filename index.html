@@ -320,7 +320,9 @@
         background: rgba(255, 255, 255, 0.2);
         border-radius: 50%;
         transform: translate(-50%, -50%);
-        transition: transform 0.1s;
+    }
+    .joystick-handle-returning {
+        transition: transform 0.2s ease-out;
     }
     .mobile-btn {
         width: 60px;
@@ -424,7 +426,7 @@
 
   <div id="mobile-controls" class="hidden">
     <div id="joystick-move-zone" class="joystick-zone" style="left: 20px; bottom: 20px;">
-        <div id="joystick-move-handle" class="joystick-move-handle"></div>
+        <div id="joystick-move-handle" class="joystick-handle"></div>
     </div>
     <div id="action-buttons" style="position: absolute; right: 20px; bottom: 20px; display: flex; flex-direction: column; gap: 15px;">
         <button id="move-up-btn" class="mobile-btn">▲</button>
@@ -565,7 +567,6 @@
     const velocity = new THREE.Vector3();
     const direction = new THREE.Vector3();
     let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false, moveUp = false, moveDown = false;
-    let cameraLookSpeed = { x: 0, y: 0 };
     const playerEyeHeight = 1.8;
     
     const onKeyDown = (event) => {
@@ -589,45 +590,92 @@
     document.addEventListener('keyup', onKeyUp);
 
     // --- Mobile Touch Controls ---
+    let moveAnalog = new THREE.Vector2();
     if (isMobile) {
-        const moveStick = document.getElementById('joystick-move-handle'); const moveZone = document.getElementById('joystick-move-zone');
-        const upBtn = document.getElementById('move-up-btn'); const downBtn = document.getElementById('move-down-btn');
+        const lookSensitivity = 0.0025;
+        const moveStick = document.getElementById('joystick-move-handle'); 
+        const moveZone = document.getElementById('joystick-move-zone');
+        const upBtn = document.getElementById('move-up-btn'); 
+        const downBtn = document.getElementById('move-down-btn');
         const interactBtn = document.getElementById('interact-btn');
-        let moveTouchId = -1, lookTouchId = -1; let lookStart = { x: 0, y: 0 };
-        const moveStickRadius = moveZone.offsetWidth / 2;
-        moveZone.addEventListener('touchstart', (e) => { e.preventDefault(); moveTouchId = e.changedTouches[0].identifier; }, { passive: false });
+        let moveTouchId = -1, lookTouchId = -1; 
+        let lookStart = { x: 0, y: 0 };
+        
+        moveZone.addEventListener('touchstart', (e) => { 
+            e.preventDefault(); 
+            moveTouchId = e.changedTouches[0].identifier; 
+            moveStick.classList.remove('joystick-handle-returning');
+        }, { passive: false });
+
         document.addEventListener('touchmove', (e) => {
             e.preventDefault();
             for(let i=0; i < e.changedTouches.length; i++){
                 const touch = e.changedTouches[i];
                 if (touch.identifier === moveTouchId) {
-                    const rect = moveZone.getBoundingClientRect(); const x = touch.clientX - (rect.left + moveStickRadius); const y = touch.clientY - (rect.top + moveStickRadius);
-                    const dist = Math.min(Math.sqrt(x*x + y*y), moveStickRadius - 30); const angle = Math.atan2(y, x);
-                    moveStick.style.transform = `translate(${Math.cos(angle) * dist - 30}px, ${Math.sin(angle) * dist - 30}px)`;
-                    const deadzone = 0.1; const normalizedX = x / moveStickRadius; const normalizedY = y / moveStickRadius;
-                    moveForward = normalizedY < -deadzone; moveBackward = normalizedY > deadzone; moveLeft = normalizedX < -deadzone; moveRight = normalizedX > deadzone;
+                    const rect = moveZone.getBoundingClientRect();
+                    const stickRadius = moveZone.offsetWidth / 2;
+                    const handleRadius = moveStick.offsetWidth / 2;
+                    const x = touch.clientX - (rect.left + stickRadius);
+                    const y = touch.clientY - (rect.top + stickRadius);
+                    let dist = Math.sqrt(x*x + y*y);
+                    const angle = Math.atan2(y, x);
+
+                    const handleDist = Math.min(dist, stickRadius - handleRadius);
+                    moveStick.style.transform = `translate(calc(-50% + ${Math.cos(angle) * handleDist}px), calc(-50% + ${Math.sin(angle) * handleDist}px))`;
+
+                    dist = Math.min(dist, stickRadius);
+                    const deadzone = stickRadius * 0.2;
+                    if (dist < deadzone) {
+                        moveAnalog.set(0, 0);
+                    } else {
+                        const normalizedDist = Math.min(1.0, (dist - deadzone) / (stickRadius - deadzone));
+                        moveAnalog.set(
+                            Math.cos(angle) * normalizedDist,
+                            -Math.sin(angle) * normalizedDist
+                        );
+                    }
                 } else if(touch.identifier === lookTouchId && !isTerminalActive) {
-                    const deltaX = touch.clientX - lookStart.x; const deltaY = touch.clientY - lookStart.y;
-                    cameraLookSpeed.x = deltaX * 0.002; cameraLookSpeed.y = deltaY * 0.002;
-                    lookStart.x = touch.clientX; lookStart.y = touch.clientY;
+                    const deltaX = touch.clientX - lookStart.x; 
+                    const deltaY = touch.clientY - lookStart.y;
+                    
+                    camera.rotation.y -= deltaX * lookSensitivity;
+                    camera.rotation.x -= deltaY * lookSensitivity;
+                    camera.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, camera.rotation.x));
+                    
+                    lookStart.x = touch.clientX; 
+                    lookStart.y = touch.clientY;
                 }
             }
         }, { passive: false });
+
         document.addEventListener('touchstart', (e) => {
              for(let i=0; i < e.changedTouches.length; i++){
                 const touch = e.changedTouches[i];
                 if (touch.clientX > window.innerWidth / 2 && moveTouchId !== touch.identifier) {
-                    if (lookTouchId === -1 && !isTerminalActive) { lookTouchId = touch.identifier; lookStart.x = touch.clientX; lookStart.y = touch.clientY; }
+                    if (lookTouchId === -1 && !isTerminalActive) { 
+                        lookTouchId = touch.identifier; 
+                        lookStart.x = touch.clientX; 
+                        lookStart.y = touch.clientY; 
+                    }
                 }
             }
         });
+
         document.addEventListener('touchend', (e) => {
             for(let i=0; i < e.changedTouches.length; i++){
                 const touch = e.changedTouches[i];
-                if (touch.identifier === moveTouchId) { moveTouchId = -1; moveStick.style.transform = `translate(-50%, -50%)`; moveForward = moveBackward = moveLeft = moveRight = false; }
-                else if(touch.identifier === lookTouchId) { lookTouchId = -1; }
+                if (touch.identifier === moveTouchId) { 
+                    moveTouchId = -1;
+                    moveStick.classList.add('joystick-handle-returning');
+                    moveStick.style.transform = `translate(-50%, -50%)`; 
+                    moveAnalog.set(0,0);
+                }
+                else if(touch.identifier === lookTouchId) { 
+                    lookTouchId = -1; 
+                }
             }
         });
+
         upBtn.addEventListener('touchstart', () => moveUp = true); upBtn.addEventListener('touchend', () => moveUp = false);
         downBtn.addEventListener('touchstart', () => moveDown = true); downBtn.addEventListener('touchend', () => moveDown = false);
         interactBtn.addEventListener('click', () => { if (intersectedObject) openModalForObject(intersectedObject); });
@@ -1487,7 +1535,7 @@
                     vWorldPosition = (modelMatrix * vec4(position, 1.0)).xyz;
                     vNoise = snoise(position * 3.0 + uTime * 0.5);
                     vec3 displacedPosition = position + normal * vNoise * 0.3;
-                    gl_Position = projectionMatrix * modelViewMatrix * vec4(displacedPosition, 1.0);
+                    gl_Position = projectionMatrix * viewMatrix * vec4(displacedPosition, 1.0);
                 }
             `,
             fragmentShader: `
@@ -1621,7 +1669,7 @@
       }
 
       animatingObjects.forEach((p) => {
-        if (!p.parent && p.type !== 'Mesh') return; // Allow root-level animated objects like the fractal garden
+        if (!p.parent && p.type !== 'Mesh' && !p.userData.type) return; 
         
         const isIntersected = (intersectedObject && (p === intersectedObject.parent || p === intersectedObject.parent.parent));
 
@@ -1692,24 +1740,46 @@
       });
 
       if (!isTerminalActive) {
-        velocity.x -= velocity.x * 10.0 * delta; velocity.y -= velocity.y * 10.0 * delta; velocity.z -= velocity.z * 10.0 * delta;
-        direction.z = Number(moveForward) - Number(moveBackward); direction.x = Number(moveRight) - Number(moveLeft); direction.normalize();
-        if (moveForward || moveBackward) velocity.z -= direction.z * speed * delta;
-        if (moveLeft || moveRight) velocity.x -= direction.x * speed * delta;
-        if (moveUp) velocity.y += speed * delta; if (moveDown) velocity.y -= speed * delta;
+        velocity.x -= velocity.x * 10.0 * delta; 
+        velocity.y -= velocity.y * 10.0 * delta; 
+        velocity.z -= velocity.z * 10.0 * delta;
+        
         if (isMobile) {
-            camera.rotation.y -= cameraLookSpeed.x; camera.rotation.x -= cameraLookSpeed.y;
-            camera.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, camera.rotation.x));
-            cameraLookSpeed.x = 0; cameraLookSpeed.y = 0;
+            direction.z = moveAnalog.y;
+            direction.x = moveAnalog.x;
+        } else {
+            direction.z = Number(moveForward) - Number(moveBackward);
+            direction.x = Number(moveRight) - Number(moveLeft);
+            direction.normalize();
+        }
+        
+        const currentSpeed = speed;
+        
+        velocity.z -= direction.z * currentSpeed * delta;
+        velocity.x -= direction.x * currentSpeed * delta;
+
+        if (moveUp) velocity.y += currentSpeed * delta; 
+        if (moveDown) velocity.y -= currentSpeed * delta;
+        
+        if (isMobile) {
             const euler = new THREE.Euler(0, camera.rotation.y, 0, 'YXZ');
-            const forward = new THREE.Vector3(0, 0, -1).applyEuler(euler); const right = new THREE.Vector3(1, 0, 0).applyEuler(euler);
-            camera.position.addScaledVector(forward, -velocity.z * delta); camera.position.addScaledVector(right, -velocity.x * delta);
+            const forward = new THREE.Vector3(0, 0, -1).applyEuler(euler);
+            const right = new THREE.Vector3(1, 0, 0).applyEuler(euler);
+            camera.position.addScaledVector(forward, -velocity.z * delta);
+            camera.position.addScaledVector(right, -velocity.x * delta);
             camera.position.y += velocity.y * delta; 
-            if (camera.position.y < ground.position.y + playerEyeHeight) { camera.position.y = ground.position.y + playerEyeHeight; velocity.y = 0; }
+            if (camera.position.y < ground.position.y + playerEyeHeight) { 
+                camera.position.y = ground.position.y + playerEyeHeight; 
+                velocity.y = 0; 
+            }
         } else if (controls.isLocked) {
-            controls.moveRight(-velocity.x * delta); controls.moveForward(-velocity.z * delta);
+            controls.moveRight(-velocity.x * delta); 
+            controls.moveForward(-velocity.z * delta);
             controls.getObject().position.y += velocity.y * delta;
-            if (controls.getObject().position.y < ground.position.y + playerEyeHeight) { controls.getObject().position.y = ground.position.y + playerEyeHeight; velocity.y = 0; }
+            if (controls.getObject().position.y < ground.position.y + playerEyeHeight) { 
+                controls.getObject().position.y = ground.position.y + playerEyeHeight; 
+                velocity.y = 0; 
+            }
         }
       }
 
@@ -1899,7 +1969,7 @@
 Шагай смело, страх пусть уйдёт,
 Пусть каждый миг к свету ведёт.
 Пусть счастье навека идёт с тобой,
-И праздник живёт в сердце твоём живой! ✨`;
+И праздник живёт в сердце твоё живой! ✨`;
 
                 const poemElement = document.getElementById('poem-container');
                 let i = 0;
